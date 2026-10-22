@@ -1,0 +1,32 @@
+[project]
+name = "fraudshield-ml-service"
+version = "1.0.0"
+description = "FraudShield AI: Credit Card Fraud Detection and Transaction Risk Monitoring System"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line length handled by black/formatter
+    "B008",  # do not perform function calls in argument defaults (standard in FastAPI Query/Depends)
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

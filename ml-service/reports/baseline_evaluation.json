@@ -1,0 +1,97 @@
+{
+  "model_type": "LogisticRegression(class_weight='balanced')",
+  "training_time": "2026-10-22T07:58:24.650271+00:00",
+  "optimal_threshold": 0.95,
+  "validation_metrics_default_threshold": {
+    "threshold": 0.5,
+    "precision": 0.0534,
+    "recall": 0.9286,
+    "f1_score": 0.101,
+    "pr_auc": 0.8394,
+    "roc_auc": 0.9828,
+    "confusion_matrix": {
+      "true_negatives": 41743,
+      "false_positives": 922,
+      "false_negatives": 4,
+      "true_positives": 52
+    },
+    "classification_report": {
+      "0": {
+        "precision": 0.9999041847318371,
+        "recall": 0.9783897808508145,
+        "f1-score": 0.9890299957352036,
+        "support": 42665.0
+      },
+      "1": {
+        "precision": 0.053388090349075976,
+        "recall": 0.9285714285714286,
+        "f1-score": 0.10097087378640776,
+        "support": 56.0
+      },
+      "accuracy": 0.9783244774232813,
+      "macro avg": {
+        "precision": 0.5266461375404565,
+        "recall": 0.9534806047111215,
+        "f1-score": 0.5450004347608056,
+        "support": 42721.0
+      },
+      "weighted avg": {
+        "precision": 0.9986634623403801,
+        "recall": 0.9783244774232813,
+        "f1-score": 0.9878659005401208,
+        "support": 42721.0
+      }
+    },
+    "cost_analysis": {
+      "fn_cost_weight": 10,
+      "fp_cost_weight": 1,
+      "estimated_cost_index": 962
+    }
+  },
+  "validation_metrics_optimal_threshold": {
+    "threshold": 0.95,
+    "precision": 0.3551,
+    "recall": 0.875,
+    "f1_score": 0.5052,
+    "pr_auc": 0.8394,
+    "roc_auc": 0.9828,
+    "confusion_matrix": {
+      "true_negatives": 42576,
+      "false_positives": 89,
+      "false_negatives": 7,
+      "true_positives": 49
+    },
+    "classification_report": {
+      "0": {
+        "precision": 0.9998356151515864,
+        "recall": 0.9979139810148834,
+        "f1-score": 0.9988738738738738,
+        "support": 42665.0
+      },
+      "1": {
+        "precision": 0.35507246376811596,
+        "recall": 0.875,
+        "f1-score": 0.5051546391752577,
+        "support": 56.0
+      },
+      "accuracy": 0.9977528615903186,
+      "macro avg": {
+        "precision": 0.6774540394598512,
+        "recall": 0.9364569905074417,
+        "f1-score": 0.7520142565245658,
+        "support": 42721.0
+      },
+      "weighted avg": {
+        "precision": 0.9989904397933909,
+        "recall": 0.9977528615903186,
+        "f1-score": 0.9982266915246046,
+        "support": 42721.0
+      }
+    },
+    "cost_analysis": {
+      "fn_cost_weight": 10,
+      "fp_cost_weight": 1,
+      "estimated_cost_index": 159
+    }
+  }
+}

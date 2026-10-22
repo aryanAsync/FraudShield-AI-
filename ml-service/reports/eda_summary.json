@@ -1,0 +1,61 @@
+{
+  "dataset_shape": {
+    "rows": 284807,
+    "columns": 31
+  },
+  "class_imbalance": {
+    "legitimate_cases": 284315,
+    "fraud_cases": 492,
+    "fraud_percentage": 0.1727,
+    "imbalance_ratio": "1:578"
+  },
+  "amount_statistics": {
+    "legitimate": {
+      "count": 284315.0,
+      "mean": 88.29,
+      "std": 250.11,
+      "min": 0.0,
+      "25%": 5.65,
+      "50%": 22.0,
+      "75%": 77.05,
+      "max": 25691.16
+    },
+    "fraudulent": {
+      "count": 492.0,
+      "mean": 122.21,
+      "std": 256.68,
+      "min": 0.0,
+      "25%": 1.0,
+      "50%": 9.25,
+      "75%": 105.89,
+      "max": 2125.87
+    }
+  },
+  "time_statistics": {
+    "total_span_hours": 48.0,
+    "median_time_seconds": 84692.0
+  },
+  "top_correlated_features": {
+    "strongest_negative": {
+      "V17": -0.3265,
+      "V14": -0.3025,
+      "V12": -0.2606,
+      "V10": -0.2169,
+      "V16": -0.1965
+    },
+    "strongest_positive": {
+      "V11": 0.1549,
+      "V4": 0.1334,
+      "V2": 0.0913,
+      "V21": 0.0404,
+      "V19": 0.0348
+    }
+  },
+  "generated_plots": [
+    "figures/class_distribution.png",
+    "figures/amount_distribution.png",
+    "figures/time_distribution.png",
+    "figures/feature_correlations.png",
+    "figures/selected_features_distribution.png"
+  ]
+}

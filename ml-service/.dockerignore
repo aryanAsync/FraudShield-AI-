@@ -1,0 +1,30 @@
+# Git & IDE caches
+.git
+.gitignore
+.vscode
+.idea
+
+# Python caches & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Test & Lint artifacts
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Raw training datasets (never copy raw data into production image)
+data/raw/
+*.csv
+*.zip
+
+# Local configuration files
+.env
+
+# Reports & Figures
+reports/

@@ -1,0 +1,68 @@
+{
+  "file_path": "C:\\Users\\hp\\Desktop\\Projects\\Ai_Mini_Project\\ml-service\\data\\raw\\creditcard.csv",
+  "total_rows": 284807,
+  "total_columns": 31,
+  "columns": [
+    "Time",
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+    "V7",
+    "V8",
+    "V9",
+    "V10",
+    "V11",
+    "V12",
+    "V13",
+    "V14",
+    "V15",
+    "V16",
+    "V17",
+    "V18",
+    "V19",
+    "V20",
+    "V21",
+    "V22",
+    "V23",
+    "V24",
+    "V25",
+    "V26",
+    "V27",
+    "V28",
+    "Amount",
+    "Class"
+  ],
+  "passed": true,
+  "critical_errors": [],
+  "warnings": [
+    "Found 1081 duplicate records (1062 legitimate, 19 fraudulent). Duplicates should be analyzed in EDA rather than silently removed."
+  ],
+  "statistics": {
+    "missing_values_by_column": {},
+    "total_missing_values": 0,
+    "infinite_values_by_column": {},
+    "unique_labels": [
+      0,
+      1
+    ],
+    "legitimate_count": 284315,
+    "fraud_count": 492,
+    "fraud_percentage": 0.17275,
+    "duplicate_rows_count": 1081,
+    "amount_summary": {
+      "min": 0.0,
+      "max": 25691.16,
+      "mean": 88.35,
+      "median": 22.0
+    },
+    "time_summary": {
+      "min": 0.0,
+      "max": 172792.0,
+      "span_seconds": 172792.0,
+      "span_hours": 48.0
+    }
+  }
+}

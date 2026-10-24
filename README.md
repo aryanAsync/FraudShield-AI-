@@ -1,86 +1,79 @@
 # FraudShield AI: Credit Card Fraud Detection and Transaction Risk Monitoring System
 
-**FraudShield AI** is a college mini-project implementing a modern, distributed financial risk monitoring and fraud detection system. The platform identifies, evaluates, flags, and explains suspicious credit card transactions in near-real-time.
+**FraudShield AI** is a production-grade financial risk monitoring and fraud detection system. The platform identifies, evaluates, flags, persists, and explains suspicious credit card transactions in real-time.
 
 ---
 
-## 1. Multi-Service Architecture
+## 1. System Architecture
 
-The system is planned and structured into three decoupled layers:
+FastAPI serves as the unified application backend and inference engine, connecting directly to a React frontend and persisting all transactions and predictions in PostgreSQL:
 
 ```
-Ai_Mini_Project/
-├── ml-service/                   # [COMPLETED] Python 3.11 & FastAPI Inference & ML Engine
-├── backend/                      # [UPCOMING] Java Spring Boot Enterprise Business Logic & DB
-├── frontend/                     # [UPCOMING] React Analyst & Admin Dashboard
-├── data/
-│   └── raw/
-│       └── creditcard.csv        # Raw dataset (284,807 transactions, 492 fraud cases)
-└── README.md                     # Root project overview & change log
+React Frontend (Analyst & Admin Dashboard)
+    |
+    v [REST APIs]
+FastAPI Application Backend (ml-service/)
+    |
+    |-- Authentication & Authorization (Upcoming phase)
+    |-- Transaction APIs (/api/v1/transactions)
+    |-- Machine Learning Prediction Service (Random Forest Pipeline)
+    |-- Prediction History & Audit Logging
+    |-- Dashboard & Analytics APIs (Upcoming phase)
+    |-- Investigation Case Management (Upcoming phase)
+    |
+    v [SQLAlchemy 2.x & psycopg 3]
+PostgreSQL Database (fraudshield)
 ```
 
-- **`ml-service/`** *(Current Phase)*: Independent microservice handling data auditing, EDA, machine learning training, threshold calibration, REST inference, batch processing, and SHAP explainability.
-- **`backend/`** *(Next Phase)*: Spring Boot service managing account state, cardholder records, transaction ingestion, and invoking `ml-service` via internal REST APIs.
-- **`frontend/`** *(Final Phase)*: React UI displaying transaction streams, fraud alert queues, and risk score breakdowns.
+- **`ml-service/`** *(FastAPI Backend & ML Engine)*: Core backend service handling data preprocessing, Random Forest inference, SHAP explainability, and PostgreSQL persistence with Alembic migrations.
+- **`frontend/`** *(Upcoming Phase)*: React dashboard displaying live transaction feeds, fraud queues, risk distributions, and analyst investigation workflows.
+- **`data/`**: Raw dataset (`creditcard.csv` with 284,807 transactions and 492 fraud cases).
 
 ---
 
-## 2. Machine Learning Service Overview
+## 2. Quick Start (Windows & PowerShell)
 
-For complete documentation, API specifications, and Docker deployment guides, refer to [`ml-service/README.md`](ml-service/README.md).
-
-### Quick Commands (PowerShell)
+### Prerequisites
+- Python 3.11.9
+- PostgreSQL 16+ (or Docker for `docker-compose up -d postgres`)
 
 ```powershell
+# 1. Start PostgreSQL (via Docker Compose or local Windows service)
+docker compose up -d postgres
+
+# 2. Navigate to backend / ML service
 cd ml-service
 
-# 1. Audit dataset schema & integrity
-python training/validate_data.py
+# 3. Install dependencies
+pip install -r requirements.txt
 
-# 2. Generate Exploratory Data Analysis & visual reports
-python training/eda.py
+# 4. Configure environment (.env)
+Copy-Item .env.example .env
+# Set DATABASE_URL=postgresql+psycopg://postgres:your_password@localhost:5432/fraudshield
 
-# 3. Train baseline Logistic Regression
-python training/train.py --save-artifact
+# 5. Run Alembic database migrations
+alembic upgrade head
 
-# 4. Run model tournament (LR, Random Forest, XGBoost) and save winning artifact
-python training/compare_models.py
-
-# 5. Execute 24 automated unit and integration tests
+# 6. Run full test suite (44 passing tests)
 pytest -v
 
-# 6. Start FastAPI inference server
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# 7. Start FastAPI development server
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 - **Swagger Documentation:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - **Health Endpoint:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+- **Score Endpoint:** `POST /api/v1/transactions/score`
+- **Transactions API:** `GET /api/v1/transactions`
 
 ---
 
-## 3. Project Implementation Log & Changelog
+## 3. Project Implementation Milestones
 
-This log documents all architectural milestones and implementations completed across the repository.
-
-### Chronological Implementation Log
-
-| Date / Milestone | Component | Description & Key Decisions | Status |
+| Phase | Milestone | Description & Key Results | Status |
 |---|---|---|---|
-| **Phase 1** | Workspace Discovery | Located existing `creditcard.csv` in `data/raw/` (150 MB). Created NTFS hardlink to `ml-service/data/raw/creditcard.csv` for zero-copy file sharing. | **Completed** |
-| **Phase 2** | Project Scaffolding | Established modular `ml-service/` structure, pinned `requirements.txt`, created `.env.example` and `app/config.py` with multi-path resolution. | **Completed** |
-| **Phase 3** | Data Validation | Built `training/validate_data.py`. Confirmed 284,807 rows, 31 columns, 0 nulls, 0 non-finite values, 1,081 duplicates, and 492 fraud cases (0.1727%). | **Completed** |
-| **Phase 4** | EDA & Reporting | Built `training/eda.py`. Generated 5 diagnostic figures in `reports/figures/` and published `reports/eda_summary.md`. | **Completed** |
-| **Phase 5** | Baseline Training | Implemented `training/train.py` with chronological 70/15/15 time split. Fitted `RobustScaler` on train only. Optimized threshold on validation. | **Completed** |
-| **Phase 6** | Model Comparison | Built `training/compare_models.py`. Evaluated Logistic Regression, Random Forest, and XGBoost on validation data. Selected `RandomForest` due to superior PR-AUC (`0.8436` vs `0.8209`), zero validation false alarms (`1.0000` precision), and threshold stability (`0.5600` vs `0.8650`), deliberately prioritizing fewer false alarms. Verified strict test set isolation (test partition was kept untouched during selection and evaluated only once post-selection: `Precision: 0.8837, Recall: 0.7308, F1: 0.8000, PR-AUC: 0.7661`). Exported `artifacts/fraud_model_v1.joblib`. | **Completed** |
-| **Phase 7** | FastAPI Service | Developed `app/main.py`, `app/api/routes/`, `app/schemas/`, and `app/services/predictor.py`. Implemented single inference, bounded batch scoring, and SHAP `TreeExplainer` feature attributions. | **Completed** |
-| **Phase 8** | Automated Testing | Implemented 24 automated tests in `tests/test_health.py`, `tests/test_predictions.py`, and `tests/test_schemas.py`. Reached 100% pass rate in 5.41s. | **Completed** |
-| **Phase 9** | Production Docker | Created non-root `python:3.11-slim` `Dockerfile` with health checks and `.dockerignore`. Documented dynamic model volume mounts. | **Completed** |
-
----
-
-## 4. Key Engineering Fixes Log
-
-1. **Pydantic v2 Optional Float Override:** Handled empty string inputs for `DECISION_THRESHOLD_OVERRIDE` in `.env` using `@field_validator(mode="before")` to prevent validation crashes.
-2. **FastAPI JSON Serialization of Validation Errors:** Replaced raw dictionary serialization in `RequestValidationError` with `fastapi.encoders.jsonable_encoder` to properly encode nested Python `ValueError` objects.
-3. **Python 3.11 Type & Enum Standards:** Modernized schemas to use `enum.StrEnum` and standard type annotations (`dict`, `tuple`, `list`) following PEP 663 and Ruff linting standards.
-4. **Resilient Explainability:** Designed SHAP `TreeExplainer` with defensive exception handling so explanation failures never block primary fraud scoring.
+| **Phase 1** | Machine Learning & EDA | Evaluated Logistic Regression, Random Forest, and XGBoost. Selected Random Forest (`PR-AUC: 0.8436`, `F1: 0.8571` on validation, `Precision: 0.8837` on test). Built FastAPI inference service with 24 baseline passing tests. | **Completed** |
+| **Phase 2** | PostgreSQL Database Integration | Integrated SQLAlchemy 2.x, psycopg 3, and Alembic migrations. Created `transactions`, `predictions`, `investigation_cases`, and `audit_logs` tables. Added atomic scoring persistence and transaction history REST APIs. 44 passing tests. | **Completed** |
+| **Phase 3** | Authentication & Security | JWT/OAuth2 analyst authentication, role-based access control (Analyst, Admin, Auditor), and protected routes. | Upcoming |
+| **Phase 4** | Dashboard & Analytics APIs | Aggregate fraud metrics, daily velocity charts, risk tier distributions, and investigation case disposition queues. | Upcoming |
+| **Phase 5** | React Analyst Frontend | Real-time transaction review UI, SHAP waterfall charts, alert triage, and manual fraud marking. | Upcoming |

@@ -14,16 +14,32 @@ ml-service/
 │   ├── __init__.py
 │   ├── main.py                     # FastAPI application entrypoint & lifespan
 │   ├── config.py                   # Pydantic Settings configuration
+│   ├── db/
+│   │   ├── __init__.py
+│   │   ├── base.py                 # DeclarativeBase for SQLAlchemy 2.x
+│   │   ├── session.py              # Engine factory, sessionmaker & get_db dependency
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── transaction.py      # Transaction ORM model
+│   │   │   ├── prediction.py       # Prediction ORM model
+│   │   │   ├── investigation_case.py # InvestigationCase ORM model
+│   │   │   └── audit_log.py        # AuditLog ORM model
+│   │   └── repositories/
+│   │       ├── __init__.py
+│   │       ├── transaction_repository.py
+│   │       └── prediction_repository.py
 │   ├── schemas/
 │   │   ├── __init__.py
 │   │   ├── transaction.py          # Request schemas with strict validation
-│   │   └── prediction.py           # Response models & risk categorization
+│   │   ├── prediction.py           # Response models & risk categorization
+│   │   └── persistence.py          # Phase 2 score & transaction history schemas
 │   ├── api/
 │   │   ├── __init__.py
 │   │   └── routes/
 │   │       ├── __init__.py
 │   │       ├── health.py           # /health endpoint (liveness/readiness)
-│   │       └── predictions.py      # /internal/predict, /batch, /model-info
+│   │       ├── predictions.py      # /internal/predict, /batch, /model-info
+│   │       └── transactions.py     # /api/v1/transactions (score, list, detail)
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── predictor.py            # Model inference, ordering & threshold logic
@@ -32,6 +48,10 @@ ml-service/
 │       ├── __init__.py
 │       ├── preprocessing.py        # RobustScaler on Time & Amount; passthrough V1-V28
 │       └── model_loader.py         # Validated model artifact deserialization
+├── alembic/                        # Alembic migration scripts
+│   ├── env.py                      # Dynamic DB configuration from Settings
+│   └── versions/                   # Migration version revisions
+├── alembic.ini                     # Alembic migration configuration
 ├── training/
 │   ├── __init__.py
 │   ├── validate_data.py            # Comprehensive schema & data integrity checks
@@ -214,7 +234,7 @@ Trains Logistic Regression, Random Forest, and XGBoost, selects the best model, 
 ```powershell
 pytest -v
 ```
-Runs 24 automated tests covering health checks, single inference, batch prediction, Pydantic schemas, NaN/inf rejection, and SHAP explanations.
+Runs 44 automated tests covering health checks, single inference, batch prediction, Pydantic schemas, NaN/inf rejection, SHAP explanations, ORM models, check constraints, Alembic migrations, atomic score persistence, and pagination/filtering.
 
 ### F. Run Linter & Formatter
 ```powershell
@@ -224,7 +244,95 @@ ruff format .
 
 ---
 
-## 7. Starting the FastAPI Server
+## 7. PostgreSQL Database Setup & Migrations (Phase 2)
+
+FraudShield AI utilizes PostgreSQL for relational persistence, structured query filtering, and audit logging. Synchronous SQLAlchemy 2.x sessions are used with the modern `psycopg` (version 3) driver.
+
+### Database Setup on Windows
+
+#### Option A: Native Windows PostgreSQL Installation
+1. Install PostgreSQL 16+ using the official installer from [postgresql.org](https://www.postgresql.org/download/windows/).
+2. Open PowerShell or `psql` and create the development and testing databases:
+   ```powershell
+   psql -U postgres -h localhost -c "CREATE DATABASE fraudshield;"
+   psql -U postgres -h localhost -c "CREATE DATABASE fraudshield_test;"
+   ```
+3. Set your connection URL in `ml-service/.env`:
+   ```bash
+   DATABASE_URL=postgresql+psycopg://postgres:your_password@localhost:5432/fraudshield
+   ```
+
+#### Option B: Docker Compose Development Service
+If Docker Desktop is installed, start the background PostgreSQL service using `docker-compose.yml`:
+```powershell
+docker compose up -d postgres
+```
+This spins up PostgreSQL on port 5432 with auto-restart and volume data persistence.
+
+### Database Migrations with Alembic
+
+Alembic manages all schema changes reproducibly. The configuration in `alembic/env.py` dynamically loads `DATABASE_URL` from application `Settings`.
+
+- **Apply all migrations (Upgrade to Head):**
+  ```powershell
+  alembic upgrade head
+  ```
+- **Revert last migration (Downgrade):**
+  ```powershell
+  alembic downgrade -1
+  ```
+- **Generate a new migration after model changes:**
+  ```powershell
+  alembic revision --autogenerate -m "describe_change"
+  ```
+- **Inspect migration history:**
+  ```powershell
+  alembic history --verbose
+  ```
+
+### Database Schema Overview
+
+1. **`transactions`**:
+   - `id`: Integer primary key (autoincrement)
+   - `external_reference`: Optional unique client idempotency key (indexed)
+   - `transaction_time`: Dataset Time value (seconds elapsed)
+   - `amount`: Non-negative float value (`CHECK (amount >= 0.0)`)
+   - `features`: Anonymized feature dictionary (`V1` to `V28`) stored as `JSONB` in PostgreSQL (with SQLite `JSON` fallback)
+   - `submitted_by`: Nullable analyst/user reference (reserved for authentication phase)
+   - `created_at`: Timezone-aware timestamp (indexed)
+
+2. **`predictions`**:
+   - `id`: Integer primary key
+   - `transaction_id`: Foreign key referencing `transactions.id` (`ON DELETE CASCADE`)
+   - `fraud_probability`: Calibrated float between 0.0 and 1.0
+   - `risk_score`: Calibrated operational score between 0.0 and 100.0
+   - `predicted_class`: Binary decision flag (`0` = Legitimate, `1` = Flagged Fraud)
+   - `risk_level`: Calibrated tier string (`LOW`, `MEDIUM`, `HIGH`)
+   - `decision_threshold`: Applied classification threshold
+   - `model_version`: Active model version string (`fraud-model-v1`)
+   - `explanation`: Nullable JSONB list of SHAP feature attributions
+   - `predicted_at`: Timezone-aware timestamp
+
+3. **`investigation_cases`**:
+   - `id`: Integer primary key
+   - `transaction_id`: Unique foreign key referencing `transactions.id`
+   - `status`: Case lifecycle enum (`OPEN`, `IN_REVIEW`, `CONFIRMED_FRAUD`, `LEGITIMATE`, `CLOSED`)
+   - `assigned_to`: Nullable analyst reference
+   - `notes`: Disciplinary notes and rationale
+   - `created_at`, `updated_at`, `resolved_at`
+
+4. **`audit_logs`**:
+   - `id`: Integer primary key
+   - `actor_id`: Nullable actor identifier
+   - `action`: Audit event name (e.g. `SCORE_TRANSACTION`)
+   - `entity_type`: Entity category (`transaction`, `case`)
+   - `entity_id`: Entity primary key string
+   - `details`: Optional structured metadata
+   - `created_at`: Timestamp
+
+---
+
+## 8. Starting the FastAPI Server
 
 Launch the ASGI server with Uvicorn:
 
@@ -240,9 +348,161 @@ The service will start at `http://127.0.0.1:8000`.
 
 ---
 
-## 8. API Specification & Examples
+## 9. API Specification & Examples
+
+### Persistence vs. Internal Inference Endpoints
+
+| Category | Endpoint Pattern | Description & Purpose |
+|---|---|---|
+| **Transactional API** | `/api/v1/transactions/*` | **Production Persistence APIs**: Validates input, executes ML scoring, atomically writes `transaction` and `prediction` records to PostgreSQL, supports pagination and risk filtering. |
+| **Inference Only** | `/internal/predict*` | **Stateless Inference APIs**: High-throughput inference-only endpoints with zero database writes. Used for batch scoring, test fixtures, and offline benchmarking. |
+
+---
+
+### Score & Persist Transaction: `POST /api/v1/transactions/score`
+
+Evaluates a single credit card transaction, creates a `transaction` record and corresponding `prediction` record, and commits both atomically in one database transaction.
+
+**Sample Request Body:**
+```json
+{
+  "Time": 406.0,
+  "V1": -2.312,
+  "V2": 1.951,
+  "V3": -1.609,
+  "V4": 3.997,
+  "V5": -0.522,
+  "V6": -1.426,
+  "V7": -2.537,
+  "V8": 1.391,
+  "V9": -2.770,
+  "V10": -2.772,
+  "V11": 3.202,
+  "V12": -2.899,
+  "V13": -0.595,
+  "V14": -4.289,
+  "V15": 0.389,
+  "V16": -1.140,
+  "V17": -2.830,
+  "V18": -0.016,
+  "V19": 0.416,
+  "V20": 0.126,
+  "V21": 0.517,
+  "V22": -0.035,
+  "V23": -0.465,
+  "V24": 0.320,
+  "V25": 0.044,
+  "V26": 0.177,
+  "V27": 0.261,
+  "V28": -0.143,
+  "Amount": 149.99,
+  "external_reference": "TXN-984321",
+  "explain": true
+}
+```
+
+**Sample Response Body (201 Created):**
+```json
+{
+  "transaction_id": 1,
+  "external_reference": "TXN-984321",
+  "transaction_time": 406.0,
+  "amount": 149.99,
+  "submitted_by": null,
+  "created_at": "2026-10-22T10:30:15.123456Z",
+  "prediction": {
+    "id": 1,
+    "transaction_id": 1,
+    "fraud_probability": 0.9994,
+    "risk_score": 99.94,
+    "predicted_class": 1,
+    "risk_level": "HIGH",
+    "decision_threshold": 0.56,
+    "model_version": "fraud-model-v1",
+    "explanation": [
+      {
+        "feature": "V14",
+        "attribution": 0.1463,
+        "value": -4.289
+      },
+      {
+        "feature": "V12",
+        "attribution": 0.1049,
+        "value": -2.899
+      }
+    ],
+    "predicted_at": "2026-10-22T10:30:15.125678Z"
+  }
+}
+```
+
+---
+
+### List Transactions: `GET /api/v1/transactions`
+
+Retrieve paginated transactions with optional risk filters and deterministic ordering.
+
+**Query Parameters:**
+- `page`: Page index, 1-based (default: `1`)
+- `page_size`: Results per page (default: `20`, max: `100`)
+- `risk_level`: Filter by risk tier (`LOW`, `MEDIUM`, `HIGH`)
+- `predicted_class`: Filter by prediction flag (`0` or `1`)
+- `sort_by`: Field to sort on (`created_at`, `amount`, `transaction_time`, `id`)
+- `sort_order`: Direction (`desc` or `asc`)
+
+**Example Request:**
+```
+GET /api/v1/transactions?page=1&page_size=20&risk_level=HIGH&sort_by=amount&sort_order=desc
+```
+
+**Sample Response Body (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "external_reference": "TXN-984321",
+      "transaction_time": 406.0,
+      "amount": 149.99,
+      "submitted_by": null,
+      "created_at": "2026-10-22T10:30:15.123456Z",
+      "latest_prediction": {
+        "id": 1,
+        "transaction_id": 1,
+        "fraud_probability": 0.9994,
+        "risk_score": 99.94,
+        "predicted_class": 1,
+        "risk_level": "HIGH",
+        "decision_threshold": 0.56,
+        "model_version": "fraud-model-v1",
+        "explanation": [...],
+        "predicted_at": "2026-10-22T10:30:15.125678Z"
+      }
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 1
+}
+```
+
+---
+
+### Transaction Details: `GET /api/v1/transactions/{transaction_id}`
+
+Retrieve the full transaction vector including anonymized PCA features (`V1` to `V28`) and latest prediction. Returns 404 if not found.
+
+---
+
+### Prediction History: `GET /api/v1/transactions/{transaction_id}/predictions`
+
+Returns all historical prediction evaluations for the given transaction, ordered newest first. Rescoring a transaction appends a new record to this history without overwriting earlier evaluations.
+
+---
 
 ### Health Check: `GET /health`
+
 
 **Response (200 OK):**
 ```json
@@ -540,4 +800,56 @@ This log records all development milestones, architectural decisions, technical 
   - Automated container healthcheck using `curl http://localhost:8000/health`
   - Dynamic volume mount support for model artifacts (`-v $(pwd)/artifacts:/app/artifacts:ro`)
 - **Implementation:** Created `.dockerignore` excluding raw CSV datasets, tests, and temporary caches.
+
+### Milestone 11: PostgreSQL Persistence Layer & Transaction APIs (Phase 2)
+- **Architecture:** Transitioned from inference-only service to unified FastAPI application backend with PostgreSQL persistence.
+- **ORM & Connection Pooling:** Implemented typed SQLAlchemy 2.x declarative models (`Mapped`, `mapped_column`) with connection pooling (`pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`) using the psycopg 3 driver (`postgresql+psycopg://`).
+- **Database Schema:** Created tables:
+  - `transactions`: Stores input feature vector (`V1` to `V28`) as JSONB, dataset Time, amount, external reference, and metadata.
+  - `predictions`: Persists fraud probability, risk score, binary class, risk level, applied threshold, model version, and SHAP explanation attributions.
+  - `investigation_cases`: Tracks manual analyst reviews (`OPEN`, `IN_REVIEW`, `CONFIRMED_FRAUD`, `LEGITIMATE`, `CLOSED`).
+  - `audit_logs`: Records system and user events for regulatory compliance.
+- **Alembic Migrations:** Configured dynamic migrations in `alembic/env.py` loading database settings from environment. Generated initial migration revision `7e740d3e7ffc_create_initial_schema.py`.
+- **Atomic Scoring Flow:** Built `POST /api/v1/transactions/score` which scores transactions via the Random Forest model and commits both transaction and prediction records in a single database transaction. Rolls back on any failure.
+- **Transaction REST APIs:** Added paginated and filtered listing (`GET /api/v1/transactions`), transaction detail retrieval (`GET /api/v1/transactions/{id}`), and prediction evaluation history (`GET /api/v1/transactions/{id}/predictions`).
+- **Automated Testing Expansion:** Authored 20 new tests (44 total passing tests) covering database connectivity, session cleanup, check constraints, foreign key cascades, rollback handling, pagination, filtering, and API endpoints.
+
+---
+
+## 12. Troubleshooting Guide
+
+### 1. Database Connection Failures (`psycopg.OperationalError: connection failed`)
+- **Symptoms:** FastAPI or Alembic raises connection refused or password authentication failure.
+- **Solutions:**
+  1. Verify PostgreSQL is running:
+     ```powershell
+     Test-NetConnection -ComputerName localhost -Port 5432
+     ```
+  2. If using Docker Compose, verify container status:
+     ```powershell
+     docker compose ps
+     ```
+  3. Ensure `.env` contains valid credentials:
+     ```bash
+     DATABASE_URL=postgresql+psycopg://postgres:<PASSWORD>@localhost:5432/fraudshield
+     ```
+  4. Verify the database exists in PostgreSQL:
+     ```sql
+     SELECT datname FROM pg_database WHERE datname = 'fraudshield';
+     ```
+
+### 2. Missing Driver (`ModuleNotFoundError: No module named 'psycopg'`)
+- SQLAlchemy 2.x with `postgresql+psycopg://` requires psycopg 3 (not psycopg2). Install via:
+  ```powershell
+  pip install "psycopg[binary]>=3.1.0"
+  ```
+
+### 3. Alembic Migration Errors
+- **Target database is not up to date:** Run `alembic upgrade head`.
+- **Multiple heads detected:** Inspect `alembic history` and merge revisions with `alembic merge heads -m "merge_heads"`.
+- **Table already exists:** Ensure you are running migrations against an empty database or use `alembic stamp head` if the schema was manually provisioned.
+
+### 4. Port Conflicts on Port 5432
+- If Windows native PostgreSQL and Docker PostgreSQL are both running, they will conflict on port 5432. Stop the local Windows service (`net stop postgresql-x64-16`) or map Docker to an alternative port (e.g. `5433:5432`) and update `DATABASE_URL`.
+
 

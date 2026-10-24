@@ -10,7 +10,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import health, predictions
+from app.api.routes import (
+    analytics,
+    audit_logs,
+    auth,
+    cases,
+    health,
+    predictions,
+    transactions,
+    users,
+)
 from app.config import get_settings
 from app.services.predictor import predictor_service
 
@@ -55,10 +64,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Middleware for local integration and Spring Boot backend communication
+# CORS Middleware with configurable allowed origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS or ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,7 +92,14 @@ async def validation_exception_handler(
 
 # Register routes
 app.include_router(health.router)
+app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(predictions.router)
+app.include_router(transactions.router)
+app.include_router(cases.router)
+app.include_router(audit_logs.router)
+app.include_router(analytics.router)
+
 
 
 @app.get("/", include_in_schema=False)

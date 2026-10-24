@@ -26,6 +26,29 @@ class Settings(BaseSettings):
     HOST: str = Field(default="0.0.0.0", description="Server host")
     PORT: int = Field(default=8000, description="Server port")
     LOG_LEVEL: str = Field(default="INFO", description="Logging level")
+    DATABASE_URL: str = Field(
+        default="postgresql+psycopg://postgres:postgres@localhost:5432/fraudshield",
+        description="PostgreSQL connection string using psycopg 3 driver",
+    )
+
+    # Authentication & Security
+    JWT_SECRET_KEY: str = Field(
+        default="dev-insecure-jwt-secret-key-change-in-production-abcdef123456",
+        description="Secret key used for signing JWT access tokens",
+    )
+    JWT_ALGORITHM: str = Field(default="HS256", description="Algorithm used for signing JWT")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        default=60, description="Access token expiration window in minutes"
+    )
+    CORS_ORIGINS: list[str] = Field(
+        default=[
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+        ],
+        description="Permitted CORS origins for frontend application",
+    )
 
     DATASET_PATH: str = Field(
         default="data/raw/creditcard.csv",
@@ -92,8 +115,26 @@ class Settings(BaseSettings):
             return (BASE_DIR / p).resolve()
         return (BASE_DIR / p).resolve()
 
+    def get_safe_database_url(self) -> str:
+        """Return database URL with password masked for safe logging."""
+        from urllib.parse import urlsplit, urlunsplit
+
+        try:
+            parts = urlsplit(self.DATABASE_URL)
+            if parts.password:
+                netloc = f"{parts.username}:*****@{parts.hostname}"
+                if parts.port:
+                    netloc += f":{parts.port}"
+                return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
+            return self.DATABASE_URL
+        except Exception:
+            return "postgresql+psycopg://***"
+
 
 @lru_cache
 def get_settings() -> Settings:
     """Return cached application settings instance."""
     return Settings()
+
+
+settings = get_settings()

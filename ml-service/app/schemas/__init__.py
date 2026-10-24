@@ -1,5 +1,36 @@
-"""Schemas package exports for FraudShield AI."""
-
+from app.schemas.analytics import (
+    AnalyticsOverviewResponse,
+    AnalyticsTrendsResponse,
+    CaseStatusDistributionResponse,
+    FeatureImportanceResponse,
+    RiskDistributionResponse,
+)
+from app.schemas.audit import AuditLogResponse, PaginatedAuditLogsResponse
+from app.schemas.auth import LoginRequest, TokenResponse
+from app.schemas.case import (
+    CaseAssignedUserResponse,
+    CaseCreateRequest,
+    CaseDetailResponse,
+    CasePredictionSummary,
+    CaseResponse,
+    CaseTransactionSummary,
+    CaseUpdateRequest,
+    PaginatedCasesResponse,
+)
+from app.schemas.case_note import (
+    CaseNoteCreateRequest,
+    CaseNoteResponse,
+    PaginatedCaseNotesResponse,
+)
+from app.schemas.persistence import (
+    PaginatedTransactionsResponse,
+    PredictionHistoryResponse,
+    PredictionRecordResponse,
+    ScoreTransactionRequest,
+    ScoreTransactionResponse,
+    TransactionDetailResponse,
+    TransactionSummaryResponse,
+)
 from app.schemas.prediction import (
     BatchPredictionResponse,
     FeatureAttribution,
@@ -10,15 +41,52 @@ from app.schemas.prediction import (
     RiskLevel,
 )
 from app.schemas.transaction import BatchTransactionInput, TransactionInput
+from app.schemas.user import (
+    PaginatedUsersResponse,
+    UserCreateRequest,
+    UserResponse,
+    UserUpdateRequest,
+)
 
 __all__ = [
+    "AnalyticsOverviewResponse",
+    "AnalyticsTrendsResponse",
+    "AuditLogResponse",
     "BatchPredictionResponse",
     "BatchTransactionInput",
+    "CaseAssignedUserResponse",
+    "CaseCreateRequest",
+    "CaseDetailResponse",
+    "CaseNoteCreateRequest",
+    "CaseNoteResponse",
+    "CasePredictionSummary",
+    "CaseResponse",
+    "CaseStatusDistributionResponse",
+    "CaseTransactionSummary",
+    "CaseUpdateRequest",
     "FeatureAttribution",
+    "FeatureImportanceResponse",
     "HealthResponse",
+    "LoginRequest",
     "ModelInfoResponse",
+    "PaginatedAuditLogsResponse",
+    "PaginatedCaseNotesResponse",
+    "PaginatedCasesResponse",
+    "PaginatedTransactionsResponse",
+    "PaginatedUsersResponse",
+    "PredictionHistoryResponse",
+    "PredictionRecordResponse",
     "PredictionResponse",
     "PredictionWithExplanationResponse",
+    "RiskDistributionResponse",
     "RiskLevel",
+    "ScoreTransactionRequest",
+    "ScoreTransactionResponse",
+    "TokenResponse",
+    "TransactionDetailResponse",
     "TransactionInput",
+    "TransactionSummaryResponse",
+    "UserCreateRequest",
+    "UserResponse",
+    "UserUpdateRequest",
 ]

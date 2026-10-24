@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["alembic"]
 
 [tool.ruff.lint]
 select = [
@@ -22,6 +23,9 @@ ignore = [
     "E501",  # line length handled by black/formatter
     "B008",  # do not perform function calls in argument defaults (standard in FastAPI Query/Depends)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E402"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

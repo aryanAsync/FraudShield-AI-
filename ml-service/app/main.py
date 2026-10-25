@@ -16,6 +16,7 @@ from app.api.routes import (
     auth,
     cases,
     health,
+    models,
     predictions,
     transactions,
     users,
@@ -99,6 +100,7 @@ app.include_router(transactions.router)
 app.include_router(cases.router)
 app.include_router(audit_logs.router)
 app.include_router(analytics.router)
+app.include_router(models.router)
 
 
 

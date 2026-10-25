@@ -28,6 +28,7 @@ htmlcov/
 # Large datasets
 data/raw/creditcard.csv
 *.csv
+!sample_transactions_demo.csv
 
 # OS specific
 .DS_Store

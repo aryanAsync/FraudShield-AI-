@@ -1,0 +1,30 @@
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-default);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.pagination-info {
+  color: var(--text-secondary);
+}
+
+.pagination-info .font-semibold {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pagination-page-indicator {
+  color: var(--text-secondary);
+  font-size: 12px;
+}

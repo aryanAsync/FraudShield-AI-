@@ -1,0 +1,62 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status-badge-sm {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.status-badge-md {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.status-badge-glyph {
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+.status-open {
+  color: var(--status-open-text);
+  background-color: var(--status-open-bg);
+  border-color: var(--status-open-border);
+}
+
+.status-review {
+  color: var(--status-review-text);
+  background-color: var(--status-review-bg);
+  border-color: var(--status-review-border);
+}
+
+.status-fraud {
+  color: var(--status-fraud-text);
+  background-color: var(--status-fraud-bg);
+  border-color: var(--status-fraud-border);
+  font-weight: 600;
+}
+
+.status-legit {
+  color: var(--status-legit-text);
+  background-color: var(--status-legit-bg);
+  border-color: var(--status-legit-border);
+}
+
+.status-closed {
+  color: var(--status-closed-text);
+  background-color: var(--status-closed-bg);
+  border-color: var(--status-closed-border);
+}
+
+.status-unknown {
+  color: var(--text-secondary);
+  background-color: var(--bg-subtle);
+  border-color: var(--border-default);
+}

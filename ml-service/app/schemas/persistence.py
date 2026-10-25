@@ -201,3 +201,87 @@ class PredictionHistoryResponse(BaseModel):
     predictions: list[PredictionRecordResponse] = Field(
         ..., description="Historical predictions ordered newest first"
     )
+
+
+class BatchScoreTransactionItem(BaseModel):
+    """Single transaction record within a batch scoring request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    Time: float = Field(..., description="Seconds elapsed since the first transaction in dataset")
+    V1: float = Field(..., description="PCA feature V1")
+    V2: float = Field(..., description="PCA feature V2")
+    V3: float = Field(..., description="PCA feature V3")
+    V4: float = Field(..., description="PCA feature V4")
+    V5: float = Field(..., description="PCA feature V5")
+    V6: float = Field(..., description="PCA feature V6")
+    V7: float = Field(..., description="PCA feature V7")
+    V8: float = Field(..., description="PCA feature V8")
+    V9: float = Field(..., description="PCA feature V9")
+    V10: float = Field(..., description="PCA feature V10")
+    V11: float = Field(..., description="PCA feature V11")
+    V12: float = Field(..., description="PCA feature V12")
+    V13: float = Field(..., description="PCA feature V13")
+    V14: float = Field(..., description="PCA feature V14")
+    V15: float = Field(..., description="PCA feature V15")
+    V16: float = Field(..., description="PCA feature V16")
+    V17: float = Field(..., description="PCA feature V17")
+    V18: float = Field(..., description="PCA feature V18")
+    V19: float = Field(..., description="PCA feature V19")
+    V20: float = Field(..., description="PCA feature V20")
+    V21: float = Field(..., description="PCA feature V21")
+    V22: float = Field(..., description="PCA feature V22")
+    V23: float = Field(..., description="PCA feature V23")
+    V24: float = Field(..., description="PCA feature V24")
+    V25: float = Field(..., description="PCA feature V25")
+    V26: float = Field(..., description="PCA feature V26")
+    V27: float = Field(..., description="PCA feature V27")
+    V28: float = Field(..., description="PCA feature V28")
+    Amount: float = Field(..., description="Transaction amount in currency units", ge=0.0)
+    external_reference: str | None = Field(
+        default=None,
+        max_length=100,
+        description="Optional unique client reference or idempotency key",
+    )
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def check_finite(cls, v: Any) -> Any:
+        """Reject NaN, inf, and -inf values."""
+        if isinstance(v, (int, float)):
+            if not math.isfinite(v):
+                raise ValueError("Values must be finite numbers (NaN, inf, and -inf are rejected)")
+        return v
+
+
+class BatchScoreTransactionRequest(BaseModel):
+    """Payload for submitting a batch of transactions for ML fraud scoring and persistence."""
+
+    transactions: list[BatchScoreTransactionItem] = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="List of transactions to score (max 1,000 per batch)",
+    )
+    threshold: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="Optional decision threshold override for this batch",
+    )
+    explain: bool = Field(
+        default=False,
+        description="Whether to generate SHAP explanations for high-risk transactions (slower)",
+    )
+
+
+class BatchScoreTransactionResponse(BaseModel):
+    """Response returned upon successfully scoring and persisting a batch of transactions."""
+
+    total_received: int = Field(..., description="Total transactions submitted in the request")
+    persisted_count: int = Field(..., description="Number of transactions successfully persisted")
+    flagged_fraud_count: int = Field(..., description="Number of transactions classified as fraud (class 1)")
+    low_risk_count: int = Field(..., description="Number of transactions classified as LOW risk")
+    medium_risk_count: int = Field(..., description="Number of transactions classified as MEDIUM risk")
+    high_risk_count: int = Field(..., description="Number of transactions classified as HIGH risk")
+    created_transaction_ids: list[int] = Field(..., description="IDs of newly created transaction records")

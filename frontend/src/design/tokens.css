@@ -1,0 +1,169 @@
+/**
+ * FraudShield AI — Design Tokens
+ * Strictly follows design.md §9, §10, §11.
+ * Concept: "Ledger & Instrument Panel" — warm neutral paper/ink with deep teal accent.
+ */
+
+:root {
+  /* Light Theme Neutrals */
+  --bg-app: #F6F5F2;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #EFEDE8;
+  --bg-inset: #E8E5DF;
+  --border-default: #DDD9D0;
+  --border-strong: #BDB8AC;
+  --text-primary: #1B1D1F;
+  --text-secondary: #52565B;
+  --text-tertiary: #7A7E83;
+
+  /* Accent (interaction only, never risk) */
+  --accent-600: #0F5C73;
+  --accent-700: #0B4A5E;
+  --accent-100: #DCEEF3;
+  --focus-ring: #0F5C73;
+
+  /* Risk Scale (LOW / MEDIUM / HIGH) */
+  --risk-low-text: #1F6B45;
+  --risk-low-bg: #E3F1E9;
+  --risk-low-border: #B5D9C4;
+
+  --risk-med-text: #8A5A00;
+  --risk-med-bg: #FBEFD3;
+  --risk-med-border: #E8CD8C;
+
+  --risk-high-text: #A32424;
+  --risk-high-bg: #FBE4E1;
+  --risk-high-border: #EBB4AD;
+
+  /* Case Status */
+  --status-open-text: #52565B;
+  --status-open-bg: #FFFFFF;
+  --status-open-border: #DDD9D0;
+
+  --status-review-text: #0F5C73;
+  --status-review-bg: #DCEEF3;
+  --status-review-border: #99D1E0;
+
+  --status-fraud-text: #851818;
+  --status-fraud-bg: #FBE4E1;
+  --status-fraud-border: #EBB4AD;
+
+  --status-legit-text: #175235;
+  --status-legit-bg: #E3F1E9;
+  --status-legit-border: #B5D9C4;
+
+  --status-closed-text: #666A70;
+  --status-closed-bg: #EFEDE8;
+  --status-closed-border: #DDD9D0;
+
+  /* Feedback */
+  --color-danger: #A32424;
+  --color-danger-bg: #FBE4E1;
+  --color-success: #1F6B45;
+  --color-success-bg: #E3F1E9;
+  --color-warning: #8A5A00;
+  --color-warning-bg: #FBEFD3;
+  --color-info: #0F5C73;
+  --color-info-bg: #DCEEF3;
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Spacing Scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Radii */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-pill: 9999px;
+
+  /* Elevation Shadows (overlays only, panels use hairlines) */
+  --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-dialog: 0 12px 40px rgba(0, 0, 0, 0.18);
+  --scrim: rgba(18, 19, 20, 0.45);
+
+  /* Layout */
+  --sidebar-width: 232px;
+  --sidebar-collapsed-width: 56px;
+  --topbar-height: 48px;
+  --max-content-width: 1440px;
+}
+
+[data-theme="dark"] {
+  /* Dark Theme Neutrals */
+  --bg-app: #121314;
+  --bg-surface: #1A1C1E;
+  --bg-subtle: #222426;
+  --bg-inset: #0E0F10;
+  --border-default: #2D3033;
+  --border-strong: #43474B;
+  --text-primary: #ECEAE5;
+  --text-secondary: #B0B3B7;
+  --text-tertiary: #8A8E93;
+
+  /* Accent */
+  --accent-600: #4FB3CC;
+  --accent-700: #7CCBDF;
+  --accent-100: #12303A;
+  --focus-ring: #7CCBDF;
+
+  /* Risk Scale */
+  --risk-low-text: #4EBA80;
+  --risk-low-bg: #0E291B;
+  --risk-low-border: #1B4A31;
+
+  --risk-med-text: #E5AC38;
+  --risk-med-bg: #332305;
+  --risk-med-border: #5C400E;
+
+  --risk-high-text: #F26C68;
+  --risk-high-bg: #38100E;
+  --risk-high-border: #631C18;
+
+  /* Case Status */
+  --status-open-text: #B0B3B7;
+  --status-open-bg: #1A1C1E;
+  --status-open-border: #2D3033;
+
+  --status-review-text: #7CCBDF;
+  --status-review-bg: #12303A;
+  --status-review-border: #1B4E5E;
+
+  --status-fraud-text: #F26C68;
+  --status-fraud-bg: #38100E;
+  --status-fraud-border: #631C18;
+
+  --status-legit-text: #4EBA80;
+  --status-legit-bg: #0E291B;
+  --status-legit-border: #1B4A31;
+
+  --status-closed-text: #8A8E93;
+  --status-closed-bg: #222426;
+  --status-closed-border: #2D3033;
+
+  /* Feedback */
+  --color-danger: #F26C68;
+  --color-danger-bg: #38100E;
+  --color-success: #4EBA80;
+  --color-success-bg: #0E291B;
+  --color-warning: #E5AC38;
+  --color-warning-bg: #332305;
+  --color-info: #4FB3CC;
+  --color-info-bg: #12303A;
+
+  /* Shadows */
+  --shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.45);
+  --shadow-dialog: 0 16px 48px rgba(0, 0, 0, 0.65);
+  --scrim: rgba(0, 0, 0, 0.7);
+}

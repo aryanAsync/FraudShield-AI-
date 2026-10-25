@@ -1,0 +1,72 @@
+.probability-display {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.probability-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.probability-num {
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.size-sm .probability-num {
+  font-size: 13px;
+}
+
+.size-md .probability-num {
+  font-size: 14px;
+}
+
+.size-lg .probability-num {
+  font-size: 24px;
+}
+
+.threshold-caption {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.probability-track {
+  position: relative;
+  width: 100%;
+  min-width: 80px;
+  max-width: 160px;
+  height: 4px;
+  background-color: var(--bg-inset);
+  border-radius: var(--radius-xs);
+  overflow: visible;
+}
+
+.size-lg .probability-track {
+  height: 6px;
+  max-width: 240px;
+}
+
+.probability-fill {
+  height: 100%;
+  background-color: var(--accent-600);
+  border-radius: var(--radius-xs);
+  transition: width 180ms ease-out;
+}
+
+.threshold-tick {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 8px;
+  background-color: var(--text-primary);
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.size-lg .threshold-tick {
+  top: -3px;
+  height: 12px;
+}

@@ -1,0 +1,4958 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FraudShield AI \u2014 Machine Learning Service",
+    "description": "Production-ready inference service for credit card fraud detection and risk monitoring. Provides probabilistic risk scoring, calibrated risk categorization, batch inference, and SHAP feature attribution explanations.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Check service health and model readiness",
+        "description": "Returns service availability and whether the machine learning model pipeline is loaded and ready for inference.",
+        "operationId": "get_health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Authenticate user and issue JWT bearer token",
+        "description": "Validates email and password, checks active status, and returns a signed access token.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials."
+          },
+          "403": {
+            "description": "Account is deactivated."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get authenticated user profile",
+        "description": "Returns public profile details and role of the currently logged-in user.",
+        "operationId": "get_current_user_profile_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Terminate session",
+        "description": "Logs a logout audit event. For stateless JWT tokens, client must discard the token.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Logout Api V1 Auth Logout Post"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "tags": [
+          "User Administration"
+        ],
+        "summary": "List all users with pagination and filters (Admin only)",
+        "description": "Returns a paginated collection of registered user accounts.",
+        "operationId": "list_users_api_v1_users_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page index (1-based)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page index (1-based)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 20,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "ANALYST",
+                    "ADMIN",
+                    "AUDITOR"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by assigned role",
+              "title": "Role"
+            },
+            "description": "Filter by assigned role"
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by active status",
+              "title": "Is Active"
+            },
+            "description": "Filter by active status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedUsersResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "User Administration"
+        ],
+        "summary": "Create a new user account (Admin only)",
+        "description": "Registers an Analyst, Auditor, or Admin account with modern password hashing.",
+        "operationId": "create_user_api_v1_users_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email address already registered."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{user_id}": {
+      "get": {
+        "tags": [
+          "User Administration"
+        ],
+        "summary": "Get user details by ID (Admin only)",
+        "description": "Returns public profile information for a specific user.",
+        "operationId": "get_user_by_id_api_v1_users__user_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "User Administration"
+        ],
+        "summary": "Update user profile, role, or active status (Admin only)",
+        "description": "Allows updating user role, activating/deactivating, or updating password. Prevents deactivating the last active admin.",
+        "operationId": "update_user_api_v1_users__user_id__patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/model-info": {
+      "get": {
+        "tags": [
+          "Predictions & Model Operations"
+        ],
+        "summary": "Retrieve active model metadata and metrics",
+        "description": "Returns public model specifications, features, trained thresholds, and evaluation metrics without exposing filesystem paths or credentials.",
+        "operationId": "get_model_information_internal_model_info_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/predict": {
+      "post": {
+        "tags": [
+          "Predictions & Model Operations"
+        ],
+        "summary": "Score fraud risk for a single transaction",
+        "description": "Evaluates a single credit card transaction feature vector against the fitted ML pipeline. Strictly validates feature schema, rejects non-finite values and unrecognized fields, and computes fraud probability, calibrated risk score, and risk category.",
+        "operationId": "predict_transaction_internal_predict_post",
+        "parameters": [
+          {
+            "name": "explain",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether to include SHAP feature attribution explanations",
+              "default": false,
+              "title": "Explain"
+            },
+            "description": "Whether to include SHAP feature attribution explanations"
+          },
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional threshold override for this inference request",
+              "title": "Threshold"
+            },
+            "description": "Optional threshold override for this inference request"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransactionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inference successful with risk score and prediction.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PredictionWithExplanationResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PredictionResponse"
+                    }
+                  ],
+                  "title": "Response Predict Transaction Internal Predict Post"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input values or unprocessable transaction data."
+          },
+          "422": {
+            "description": "Schema validation failure (missing features or unexpected fields like Class)."
+          },
+          "503": {
+            "description": "Model pipeline is not loaded into memory."
+          }
+        }
+      }
+    },
+    "/internal/predict/batch": {
+      "post": {
+        "tags": [
+          "Predictions & Model Operations"
+        ],
+        "summary": "Batch score multiple transactions",
+        "description": "Evaluates a batch of transactions with memory safety constraints and strict ordering preservation.",
+        "operationId": "predict_batch_transactions_internal_predict_batch_post",
+        "parameters": [
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional threshold override for all transactions in this batch",
+              "title": "Threshold"
+            },
+            "description": "Optional threshold override for all transactions in this batch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchTransactionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch inference completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchPredictionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Batch payload exceeds maximum allowed size or contains invalid rows."
+          },
+          "503": {
+            "description": "Model pipeline is not loaded into memory."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/score": {
+      "post": {
+        "tags": [
+          "Transactions & Persistence"
+        ],
+        "summary": "Score and persist a financial transaction",
+        "description": "Executes machine learning fraud scoring and atomically saves both the transaction vector and its prediction outcome in PostgreSQL within a single database transaction.",
+        "operationId": "score_and_persist_transaction_api_v1_transactions_score_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoreTransactionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Transaction and prediction persisted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreTransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input features or unprocessable data."
+          },
+          "409": {
+            "description": "A transaction with the provided external_reference already exists."
+          },
+          "422": {
+            "description": "Schema validation failure."
+          },
+          "503": {
+            "description": "Predictor model pipeline is not available."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/transactions": {
+      "get": {
+        "tags": [
+          "Transactions & Persistence"
+        ],
+        "summary": "List transactions with pagination and risk filters",
+        "description": "Returns a paginated list of stored transactions, optionally filtered by risk level or predicted class.",
+        "operationId": "list_transactions_api_v1_transactions_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page index (1-based)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page index (1-based)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 20,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "risk_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RiskLevel"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by risk tier",
+              "title": "Risk Level"
+            },
+            "description": "Filter by risk tier"
+          },
+          {
+            "name": "predicted_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by binary classification (0 or 1)",
+              "title": "Predicted Class"
+            },
+            "description": "Filter by binary classification (0 or 1)"
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "created_at",
+                "amount",
+                "transaction_time",
+                "id"
+              ],
+              "type": "string",
+              "description": "Field to sort on",
+              "default": "created_at",
+              "title": "Sort By"
+            },
+            "description": "Field to sort on"
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "description": "Sorting direction",
+              "default": "desc",
+              "title": "Sort Order"
+            },
+            "description": "Sorting direction"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedTransactionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{transaction_id}": {
+      "get": {
+        "tags": [
+          "Transactions & Persistence"
+        ],
+        "summary": "Retrieve detailed transaction record",
+        "description": "Returns full transaction details, anonymized PCA features, and latest prediction summary.",
+        "operationId": "get_transaction_details_api_v1_transactions__transaction_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Transaction Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionDetailResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transactions/{transaction_id}/predictions": {
+      "get": {
+        "tags": [
+          "Transactions & Persistence"
+        ],
+        "summary": "Retrieve prediction evaluation history for a transaction",
+        "description": "Returns all historical prediction snapshots recorded for this transaction, ordered newest first.",
+        "operationId": "get_transaction_predictions_api_v1_transactions__transaction_id__predictions_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Transaction Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionHistoryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cases": {
+      "post": {
+        "tags": [
+          "Investigation Cases"
+        ],
+        "summary": "Open an investigation case for a transaction",
+        "description": "Creates an investigation case in OPEN status. Requires ANALYST or ADMIN role.",
+        "operationId": "create_case_api_v1_cases_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Case opened successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions (Auditor denied)."
+          },
+          "404": {
+            "description": "Transaction does not exist."
+          },
+          "409": {
+            "description": "An investigation case already exists for this transaction."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Investigation Cases"
+        ],
+        "summary": "List and filter investigation cases",
+        "description": "Returns paginated investigation cases. Administrators and Auditors view all cases; Analysts view assigned cases and permitted unassigned cases.",
+        "operationId": "list_cases_api_v1_cases_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page index (1-based)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page index (1-based)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 20,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by case status",
+              "title": "Status"
+            },
+            "description": "Filter by case status"
+          },
+          {
+            "name": "assigned_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by assigned analyst ID",
+              "title": "Assigned User Id"
+            },
+            "description": "Filter by assigned analyst ID"
+          },
+          {
+            "name": "transaction_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by transaction ID",
+              "title": "Transaction Id"
+            },
+            "description": "Filter by transaction ID"
+          },
+          {
+            "name": "risk_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by prediction risk level",
+              "title": "Risk Level"
+            },
+            "description": "Filter by prediction risk level"
+          },
+          {
+            "name": "predicted_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by predicted class",
+              "title": "Predicted Class"
+            },
+            "description": "Filter by predicted class"
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start date filter",
+              "title": "Created From"
+            },
+            "description": "Start date filter"
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "End date filter",
+              "title": "Created To"
+            },
+            "description": "End date filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCasesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cases/{case_id}": {
+      "get": {
+        "tags": [
+          "Investigation Cases"
+        ],
+        "summary": "Get complete investigation case details",
+        "description": "Returns case details, associated transaction, latest prediction, and chronological notes.",
+        "operationId": "get_case_details_api_v1_cases__case_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied. Case is assigned to another analyst."
+          },
+          "404": {
+            "description": "Investigation case not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Investigation Cases"
+        ],
+        "summary": "Update an investigation case",
+        "description": "Update status, analyst assignment, or description with state machine validation.",
+        "operationId": "update_case_api_v1_cases__case_id__patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid assignment or update request."
+          },
+          "403": {
+            "description": "Insufficient permissions or unauthorized reassignment."
+          },
+          "404": {
+            "description": "Case or assigned user not found."
+          },
+          "422": {
+            "description": "Invalid state transition."
+          }
+        }
+      }
+    },
+    "/api/v1/cases/{case_id}/notes": {
+      "post": {
+        "tags": [
+          "Investigation Cases"
+        ],
+        "summary": "Add an investigation note to a case",
+        "description": "Adds an append-only chronological note. Cannot add notes to closed cases. Auditor denied.",
+        "operationId": "add_case_note_api_v1_cases__case_id__notes_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseNoteCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Investigation note created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseNoteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Empty note body."
+          },
+          "403": {
+            "description": "Insufficient permissions or unauthorized analyst."
+          },
+          "404": {
+            "description": "Case not found."
+          },
+          "422": {
+            "description": "Cannot add notes to a closed case."
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Investigation Cases"
+        ],
+        "summary": "List investigation notes for a case",
+        "description": "Returns notes in chronological order (oldest first). Safe author profiles.",
+        "operationId": "list_case_notes_api_v1_cases__case_id__notes_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Case Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page index (1-based)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page index (1-based)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 100,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedCaseNotesResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied for restricted cases."
+          },
+          "404": {
+            "description": "Case not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-logs": {
+      "get": {
+        "tags": [
+          "Audit Trail"
+        ],
+        "summary": "Query system audit log trail",
+        "description": "Returns paginated immutable audit logs with optional filters and deterministic ordering. Strictly accessible only to ADMIN and AUDITOR roles. Read-only.",
+        "operationId": "list_audit_logs_api_v1_audit_logs_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page index (1-based)",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page index (1-based)"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 20,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          },
+          {
+            "name": "actor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by actor ID",
+              "title": "Actor Id"
+            },
+            "description": "Filter by actor ID"
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by action name (e.g., CASE_CREATED, LOGIN_SUCCESS)",
+              "title": "Action"
+            },
+            "description": "Filter by action name (e.g., CASE_CREATED, LOGIN_SUCCESS)"
+          },
+          {
+            "name": "entity_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by entity type (e.g., investigation_case, user)",
+              "title": "Entity Type"
+            },
+            "description": "Filter by entity type (e.g., investigation_case, user)"
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by entity identifier",
+              "title": "Entity Id"
+            },
+            "description": "Filter by entity identifier"
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Earliest event timestamp filter",
+              "title": "Created From"
+            },
+            "description": "Earliest event timestamp filter"
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest event timestamp filter",
+              "title": "Created To"
+            },
+            "description": "Latest event timestamp filter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAuditLogsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date range or parameters."
+          },
+          "403": {
+            "description": "Insufficient permissions (Analyst forbidden)."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/overview": {
+      "get": {
+        "tags": [
+          "Dashboard Analytics"
+        ],
+        "summary": "Get dashboard overview KPIs",
+        "description": "Returns top-level metric cards including total transactions, evaluation counts, model-predicted fraud rate, average risk score, and investigation case pipeline counts. Uses the latest prediction per transaction to prevent double counting. Accessible to ADMIN, ANALYST, and AUDITOR roles.",
+        "operationId": "get_analytics_overview_api_v1_analytics_overview_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Earliest timestamp filter (UTC)",
+              "title": "Start Date"
+            },
+            "description": "Earliest timestamp filter (UTC)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest timestamp filter (UTC)",
+              "title": "End Date"
+            },
+            "description": "Latest timestamp filter (UTC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date range parameters."
+          },
+          "401": {
+            "description": "Missing or invalid authentication token."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/risk-distribution": {
+      "get": {
+        "tags": [
+          "Dashboard Analytics"
+        ],
+        "summary": "Get current risk tier and classification distribution",
+        "description": "Returns the distribution of transactions across risk categories (LOW, MEDIUM, HIGH) and binary classification decisions (predicted fraud vs legitimate). Strictly evaluated on the latest prediction for each transaction. Accessible to ADMIN, ANALYST, and AUDITOR roles.",
+        "operationId": "get_risk_distribution_api_v1_analytics_risk_distribution_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Earliest timestamp filter (UTC)",
+              "title": "Start Date"
+            },
+            "description": "Earliest timestamp filter (UTC)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest timestamp filter (UTC)",
+              "title": "End Date"
+            },
+            "description": "Latest timestamp filter (UTC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskDistributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date range parameters."
+          },
+          "401": {
+            "description": "Missing or invalid authentication token."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/trends": {
+      "get": {
+        "tags": [
+          "Dashboard Analytics"
+        ],
+        "summary": "Get transaction and prediction time-series trends",
+        "description": "Returns time-series metrics aggregated by hourly or daily buckets. Includes prediction evaluation volume, distinct transaction volume, flagged fraud counts, and average risk score. Accessible to ADMIN, ANALYST, and AUDITOR roles.",
+        "operationId": "get_analytics_trends_api_v1_analytics_trends_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Time bucket interval: 'hour' or 'day'",
+              "default": "day",
+              "title": "Interval"
+            },
+            "description": "Time bucket interval: 'hour' or 'day'"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Earliest timestamp filter (UTC)",
+              "title": "Start Date"
+            },
+            "description": "Earliest timestamp filter (UTC)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest timestamp filter (UTC)",
+              "title": "End Date"
+            },
+            "description": "Latest timestamp filter (UTC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsTrendsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid interval or date range exceeding limit."
+          },
+          "401": {
+            "description": "Missing or invalid authentication token."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/case-status-distribution": {
+      "get": {
+        "tags": [
+          "Dashboard Analytics"
+        ],
+        "summary": "Get investigation case status distribution",
+        "description": "Returns case counts and proportions by status (OPEN, IN_REVIEW, CONFIRMED_FRAUD, LEGITIMATE, CLOSED), along with assignment stats and average resolution time in seconds. Accessible to ADMIN, ANALYST, and AUDITOR roles.",
+        "operationId": "get_case_status_distribution_api_v1_analytics_case_status_distribution_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Earliest timestamp filter (UTC)",
+              "title": "Start Date"
+            },
+            "description": "Earliest timestamp filter (UTC)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest timestamp filter (UTC)",
+              "title": "End Date"
+            },
+            "description": "Latest timestamp filter (UTC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseStatusDistributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date range parameters."
+          },
+          "401": {
+            "description": "Missing or invalid authentication token."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/feature-importance": {
+      "get": {
+        "tags": [
+          "Dashboard Analytics"
+        ],
+        "summary": "Get aggregated model explanation feature importance",
+        "description": "Aggregates SHAP feature attribution contributions across high-risk transaction predictions. Returns top features ranked by mean absolute contribution to explain primary risk drivers. Accessible to ADMIN, ANALYST, and AUDITOR roles.",
+        "operationId": "get_feature_importance_api_v1_analytics_feature_importance_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "risk_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by risk tier: 'LOW', 'MEDIUM', or 'HIGH'",
+              "default": "HIGH",
+              "title": "Risk Level"
+            },
+            "description": "Filter by risk tier: 'LOW', 'MEDIUM', or 'HIGH'"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 30,
+              "minimum": 1,
+              "description": "Top N features to return",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Top N features to return"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Earliest timestamp filter (UTC)",
+              "title": "Start Date"
+            },
+            "description": "Earliest timestamp filter (UTC)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Latest timestamp filter (UTC)",
+              "title": "End Date"
+            },
+            "description": "Latest timestamp filter (UTC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureImportanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid risk level or date range parameters."
+          },
+          "401": {
+            "description": "Missing or invalid authentication token."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalyticsFilterSummary": {
+        "properties": {
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date",
+            "description": "Start date filter (UTC)"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date",
+            "description": "End date filter (UTC)"
+          }
+        },
+        "type": "object",
+        "title": "AnalyticsFilterSummary",
+        "description": "Echoes applied timestamp filter bounds."
+      },
+      "AnalyticsOverviewResponse": {
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/AnalyticsFilterSummary"
+          },
+          "transactions": {
+            "$ref": "#/components/schemas/OverviewTransactionsSummary"
+          },
+          "predictions": {
+            "$ref": "#/components/schemas/OverviewPredictionsSummary"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/OverviewRiskSummary"
+          },
+          "cases": {
+            "$ref": "#/components/schemas/OverviewCasesSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filters",
+          "transactions",
+          "predictions",
+          "risk",
+          "cases"
+        ],
+        "title": "AnalyticsOverviewResponse",
+        "description": "Comprehensive high-level KPI dashboard overview."
+      },
+      "AnalyticsTrendsResponse": {
+        "properties": {
+          "interval": {
+            "type": "string",
+            "title": "Interval",
+            "description": "Aggregation interval: 'hour' or 'day'"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Metrics",
+            "description": "Metadata describing event timestamp field"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TrendBucketItem"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Chronological time buckets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "interval",
+          "metrics",
+          "items"
+        ],
+        "title": "AnalyticsTrendsResponse",
+        "description": "Time-series trend metrics over specified interval buckets."
+      },
+      "AuditLogResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Unique audit event ID"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id",
+            "description": "Actor ID who triggered the action"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "description": "Action name (e.g., CASE_CREATED, CASE_STATUS_CHANGED)"
+          },
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type",
+            "description": "Target entity type (e.g., case, transaction, user)"
+          },
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id",
+            "description": "Identifier of the target entity"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details",
+            "description": "Structured event metadata or delta"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Timezone-aware creation timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "entity_type",
+          "entity_id",
+          "created_at"
+        ],
+        "title": "AuditLogResponse",
+        "description": "Audit log entry response representation."
+      },
+      "BatchPredictionResponse": {
+        "properties": {
+          "total_transactions": {
+            "type": "integer",
+            "title": "Total Transactions",
+            "description": "Total transactions evaluated in batch"
+          },
+          "flagged_fraud_count": {
+            "type": "integer",
+            "title": "Flagged Fraud Count",
+            "description": "Count of transactions flagged as fraud risk"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "description": "Model version used for batch evaluation"
+          },
+          "predictions": {
+            "items": {
+              "$ref": "#/components/schemas/PredictionResponse"
+            },
+            "type": "array",
+            "title": "Predictions",
+            "description": "Ordered list of transaction predictions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_transactions",
+          "flagged_fraud_count",
+          "model_version",
+          "predictions"
+        ],
+        "title": "BatchPredictionResponse",
+        "description": "Batch prediction results wrapper."
+      },
+      "BatchTransactionInput": {
+        "properties": {
+          "transactions": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Transactions",
+            "description": "List of transaction records for batch prediction"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "transactions"
+        ],
+        "title": "BatchTransactionInput",
+        "description": "Batch input schema with bounded payload size."
+      },
+      "CaseAssignedUserResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "User ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Full display name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "User email address"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "User role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role"
+        ],
+        "title": "CaseAssignedUserResponse",
+        "description": "Public summary of the assigned analyst."
+      },
+      "CaseCreateRequest": {
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Transaction Id",
+            "description": "ID of the transaction to investigate"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Optional opening summary or notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "transaction_id"
+        ],
+        "title": "CaseCreateRequest",
+        "description": "Payload to open an investigation case for a transaction.",
+        "example": {
+          "description": "High risk transaction flagged by Random Forest model for manual review.",
+          "transaction_id": 1
+        }
+      },
+      "CaseDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Case identifier"
+          },
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Transaction ID under investigation"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Current status: OPEN, IN_REVIEW, CONFIRMED_FRAUD, LEGITIMATE, or CLOSED"
+          },
+          "assigned_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned User Id",
+            "description": "Assigned analyst user ID"
+          },
+          "assigned_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To",
+            "description": "Assigned analyst username/email"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Case description or opening notes"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Legacy free-text notes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Case opening timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At",
+            "description": "Case resolution/closure timestamp"
+          },
+          "assigned_user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseAssignedUserResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Assigned analyst profile"
+          },
+          "transaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseTransactionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Associated transaction summary"
+          },
+          "latest_prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CasePredictionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Latest model prediction summary"
+          },
+          "case_notes": {
+            "items": {
+              "$ref": "#/components/schemas/CaseNoteResponse"
+            },
+            "type": "array",
+            "title": "Case Notes",
+            "description": "Chronological list of investigation notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "transaction_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CaseDetailResponse",
+        "description": "Detailed case representation including full chronological notes timeline."
+      },
+      "CaseNoteCreateRequest": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Body",
+            "description": "Investigation findings, evidence summary, and notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "body"
+        ],
+        "title": "CaseNoteCreateRequest",
+        "description": "Payload to add a chronological investigation note to a case.",
+        "example": {
+          "body": "Reviewed transaction details, confirmed with cardholder via phone, escalated for chargeback review."
+        }
+      },
+      "CaseNoteResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Unique note identifier"
+          },
+          "case_id": {
+            "type": "integer",
+            "title": "Case Id",
+            "description": "Associated investigation case identifier"
+          },
+          "author_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Id",
+            "description": "Author user ID (nullable if user deleted)"
+          },
+          "author_name": {
+            "type": "string",
+            "title": "Author Name",
+            "description": "Display name of author"
+          },
+          "author_email": {
+            "type": "string",
+            "title": "Author Email",
+            "description": "Email address of author"
+          },
+          "author_role": {
+            "type": "string",
+            "title": "Author Role",
+            "description": "RBAC role of author at creation time"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body",
+            "description": "Note text content"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Timezone-aware creation timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "author_name",
+          "author_email",
+          "author_role",
+          "body",
+          "created_at"
+        ],
+        "title": "CaseNoteResponse",
+        "description": "Investigation note response representation."
+      },
+      "CasePredictionSummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Prediction ID"
+          },
+          "risk_score": {
+            "type": "number",
+            "title": "Risk Score",
+            "description": "Calibrated risk score (0-100)"
+          },
+          "fraud_probability": {
+            "type": "number",
+            "title": "Fraud Probability",
+            "description": "Fraud probability (0.0 - 1.0)"
+          },
+          "predicted_class": {
+            "type": "integer",
+            "title": "Predicted Class",
+            "description": "Binary prediction (0=Legit, 1=Fraud)"
+          },
+          "risk_level": {
+            "type": "string",
+            "title": "Risk Level",
+            "description": "Risk tier (LOW, MEDIUM, HIGH)"
+          },
+          "decision_threshold": {
+            "type": "number",
+            "title": "Decision Threshold",
+            "description": "Applied decision threshold"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "description": "Model version"
+          },
+          "predicted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Predicted At",
+            "description": "Inference timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "risk_score",
+          "fraud_probability",
+          "predicted_class",
+          "risk_level",
+          "decision_threshold",
+          "model_version",
+          "predicted_at"
+        ],
+        "title": "CasePredictionSummary",
+        "description": "Summary of the latest prediction outcome for the transaction under investigation."
+      },
+      "CaseResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Case identifier"
+          },
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Transaction ID under investigation"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Current status: OPEN, IN_REVIEW, CONFIRMED_FRAUD, LEGITIMATE, or CLOSED"
+          },
+          "assigned_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned User Id",
+            "description": "Assigned analyst user ID"
+          },
+          "assigned_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To",
+            "description": "Assigned analyst username/email"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Case description or opening notes"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Legacy free-text notes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Case opening timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At",
+            "description": "Case resolution/closure timestamp"
+          },
+          "assigned_user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseAssignedUserResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Assigned analyst profile"
+          },
+          "transaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CaseTransactionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Associated transaction summary"
+          },
+          "latest_prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CasePredictionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Latest model prediction summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "transaction_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CaseResponse",
+        "description": "Standard representation of an investigation case."
+      },
+      "CaseStatusDistributionItem": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Investigation status name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Number of cases in this status"
+          },
+          "percentage": {
+            "type": "number",
+            "title": "Percentage",
+            "description": "Percentage of total cases in this status [0.0 - 100.0]"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "count",
+          "percentage"
+        ],
+        "title": "CaseStatusDistributionItem",
+        "description": "Investigation case status metric item."
+      },
+      "CaseStatusDistributionResponse": {
+        "properties": {
+          "total_cases": {
+            "type": "integer",
+            "title": "Total Cases",
+            "description": "Total investigation cases in scope"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CaseStatusDistributionItem"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Case counts and shares by status"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/CaseStatusSummary",
+            "description": "Operational metrics and assignment status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_cases",
+          "items",
+          "summary"
+        ],
+        "title": "CaseStatusDistributionResponse",
+        "description": "Investigation case workflow status breakdown."
+      },
+      "CaseStatusSummary": {
+        "properties": {
+          "assigned_count": {
+            "type": "integer",
+            "title": "Assigned Count",
+            "description": "Cases currently assigned to an analyst"
+          },
+          "unassigned_count": {
+            "type": "integer",
+            "title": "Unassigned Count",
+            "description": "Cases in queue not yet assigned"
+          },
+          "unresolved_count": {
+            "type": "integer",
+            "title": "Unresolved Count",
+            "description": "Cases in OPEN or IN_REVIEW status"
+          },
+          "resolved_fraud_count": {
+            "type": "integer",
+            "title": "Resolved Fraud Count",
+            "description": "Cases confirmed as fraudulent"
+          },
+          "resolved_legitimate_count": {
+            "type": "integer",
+            "title": "Resolved Legitimate Count",
+            "description": "Cases cleared as legitimate"
+          },
+          "average_resolution_time_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Resolution Time Seconds",
+            "description": "Average seconds from creation to resolution for resolved cases"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assigned_count",
+          "unassigned_count",
+          "unresolved_count",
+          "resolved_fraud_count",
+          "resolved_legitimate_count"
+        ],
+        "title": "CaseStatusSummary",
+        "description": "Operational workload and resolution timing summary."
+      },
+      "CaseTransactionSummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Transaction ID"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Transaction amount"
+          },
+          "transaction_time": {
+            "type": "number",
+            "title": "Transaction Time",
+            "description": "Time elapsed in seconds"
+          },
+          "external_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Reference",
+            "description": "External reference ID"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By",
+            "description": "Submitter ID or email"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Timezone-aware creation timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "amount",
+          "transaction_time",
+          "created_at"
+        ],
+        "title": "CaseTransactionSummary",
+        "description": "Summary of the transaction under investigation."
+      },
+      "CaseUpdateRequest": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status",
+            "description": "Target status: OPEN, IN_REVIEW, CONFIRMED_FRAUD, LEGITIMATE, or CLOSED"
+          },
+          "assigned_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned User Id",
+            "description": "User ID of active analyst to assign (or null to unassign if permitted)"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Updated case summary description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CaseUpdateRequest",
+        "description": "Payload to update an investigation case.",
+        "example": {
+          "assigned_user_id": 2,
+          "description": "Updated case description.",
+          "status": "IN_REVIEW"
+        }
+      },
+      "ClassificationDistributionSummary": {
+        "properties": {
+          "predicted_fraud_count": {
+            "type": "integer",
+            "title": "Predicted Fraud Count",
+            "description": "Transactions with latest predicted_class = 1"
+          },
+          "predicted_fraud_percentage": {
+            "type": "number",
+            "title": "Predicted Fraud Percentage",
+            "description": "Percentage of transactions predicted as fraud"
+          },
+          "predicted_legitimate_count": {
+            "type": "integer",
+            "title": "Predicted Legitimate Count",
+            "description": "Transactions with latest predicted_class = 0"
+          },
+          "predicted_legitimate_percentage": {
+            "type": "number",
+            "title": "Predicted Legitimate Percentage",
+            "description": "Percentage of transactions predicted as legitimate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "predicted_fraud_count",
+          "predicted_fraud_percentage",
+          "predicted_legitimate_count",
+          "predicted_legitimate_percentage"
+        ],
+        "title": "ClassificationDistributionSummary",
+        "description": "Binary model classification breakdown for evaluated transactions."
+      },
+      "FeatureAttribution": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature",
+            "description": "Feature name (e.g., V14, Amount)"
+          },
+          "attribution": {
+            "type": "number",
+            "title": "Attribution",
+            "description": "SHAP value contribution toward fraud probability"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value",
+            "description": "Actual feature value in the request"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "attribution",
+          "value"
+        ],
+        "title": "FeatureAttribution",
+        "description": "SHAP feature attribution explaining a feature's push on the risk score."
+      },
+      "FeatureImportanceItem": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "title": "Rank",
+            "description": "Importance rank (1 is highest impact)"
+          },
+          "feature": {
+            "type": "string",
+            "title": "Feature",
+            "description": "Feature name (e.g., V14, Amount, V10)"
+          },
+          "mean_absolute_attribution": {
+            "type": "number",
+            "title": "Mean Absolute Attribution",
+            "description": "Mean absolute SHAP attribution contribution across sample"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "description": "Number of prediction explanations contributing to this metric"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rank",
+          "feature",
+          "mean_absolute_attribution",
+          "sample_count"
+        ],
+        "title": "FeatureImportanceItem",
+        "description": "Aggregated SHAP feature attribution contribution item."
+      },
+      "FeatureImportanceResponse": {
+        "properties": {
+          "sample_size": {
+            "type": "integer",
+            "title": "Sample Size",
+            "description": "Number of prediction explanation records evaluated"
+          },
+          "target_risk_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Risk Level",
+            "description": "Risk level filter applied for explanation aggregation"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureImportanceItem"
+            },
+            "type": "array",
+            "title": "Features",
+            "description": "Top contributing features ranked by mean absolute impact"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "AI governance and regulatory interpretation disclaimer",
+            "default": "SHAP feature attributions describe model input contributions for this sample; features V1-V28 are anonymized PCA components and do not indicate specific real-world identity, location, or customer attributes."
+          }
+        },
+        "type": "object",
+        "required": [
+          "sample_size",
+          "features"
+        ],
+        "title": "FeatureImportanceResponse",
+        "description": "Aggregated SHAP model explanation insights for high-risk transactions."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Service overall health ('healthy', 'degraded', 'unavailable')"
+          },
+          "model_loaded": {
+            "type": "boolean",
+            "title": "Model Loaded",
+            "description": "True if ML pipeline artifact is safely loaded in memory"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version",
+            "description": "Active model version identifier"
+          },
+          "model_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Type",
+            "description": "Active classifier architecture"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "description": "Current deployment environment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "model_loaded",
+          "environment"
+        ],
+        "title": "HealthResponse",
+        "description": "Health check status response."
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "Registered user email address"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password",
+            "description": "User account password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "Payload for user authentication.",
+        "example": {
+          "email": "analyst@fraudshield.ai",
+          "password": "SecurePassword123!"
+        }
+      },
+      "ModelInfoResponse": {
+        "properties": {
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "description": "Artifact version string"
+          },
+          "model_type": {
+            "type": "string",
+            "title": "Model Type",
+            "description": "Classifier algorithm name"
+          },
+          "selected_threshold": {
+            "type": "number",
+            "title": "Selected Threshold",
+            "description": "Optimized decision threshold"
+          },
+          "expected_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Expected Features",
+            "description": "Ordered feature inputs expected by model"
+          },
+          "training_dataset_description": {
+            "type": "string",
+            "title": "Training Dataset Description",
+            "description": "Summary of dataset and splits used"
+          },
+          "training_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Training Config",
+            "description": "Hyperparameters and pipeline configuration"
+          },
+          "validation_metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Validation Metrics",
+            "description": "Validation partition performance metrics"
+          },
+          "test_metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Test Metrics",
+            "description": "Final test partition performance metrics"
+          },
+          "risk_categories": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Risk Categories",
+            "description": "Operational definition of risk levels",
+            "default": {
+              "LOW": "Score < 30.0 (Minimal risk, standard automated processing)",
+              "MEDIUM": "Score 30.0 to 70.0 (Elevated risk, recommended secondary verification)",
+              "HIGH": "Score >= 70.0 or above decision threshold (Actionable risk, flag for review/block)"
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_version",
+          "model_type",
+          "selected_threshold",
+          "expected_features",
+          "training_dataset_description",
+          "training_config",
+          "validation_metrics",
+          "test_metrics"
+        ],
+        "title": "ModelInfoResponse",
+        "description": "Metadata response describing active model artifact without exposing secrets or paths."
+      },
+      "OverviewCasesSummary": {
+        "properties": {
+          "total_cases": {
+            "type": "integer",
+            "title": "Total Cases",
+            "description": "Total investigation cases matching filters"
+          },
+          "open": {
+            "type": "integer",
+            "title": "Open",
+            "description": "Cases currently in OPEN status awaiting review"
+          },
+          "in_review": {
+            "type": "integer",
+            "title": "In Review",
+            "description": "Cases currently actively IN_REVIEW by an analyst"
+          },
+          "confirmed_fraud": {
+            "type": "integer",
+            "title": "Confirmed Fraud",
+            "description": "Cases adjudicated as CONFIRMED_FRAUD"
+          },
+          "legitimate": {
+            "type": "integer",
+            "title": "Legitimate",
+            "description": "Cases adjudicated as LEGITIMATE (false alarms)"
+          },
+          "closed": {
+            "type": "integer",
+            "title": "Closed",
+            "description": "Cases archived in terminal CLOSED status"
+          },
+          "unresolved": {
+            "type": "integer",
+            "title": "Unresolved",
+            "description": "Total pending unresolved cases (OPEN + IN_REVIEW)"
+          },
+          "resolved": {
+            "type": "integer",
+            "title": "Resolved",
+            "description": "Total finalized cases (CONFIRMED_FRAUD + LEGITIMATE + CLOSED)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_cases",
+          "open",
+          "in_review",
+          "confirmed_fraud",
+          "legitimate",
+          "closed",
+          "unresolved",
+          "resolved"
+        ],
+        "title": "OverviewCasesSummary",
+        "description": "Triage investigation case counts and outcome breakdown."
+      },
+      "OverviewPredictionsSummary": {
+        "properties": {
+          "total_predictions": {
+            "type": "integer",
+            "title": "Total Predictions",
+            "description": "Total inference evaluation executions in scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_predictions"
+        ],
+        "title": "OverviewPredictionsSummary",
+        "description": "Inference evaluation volume metrics."
+      },
+      "OverviewRiskSummary": {
+        "properties": {
+          "average_risk_score": {
+            "type": "number",
+            "title": "Average Risk Score",
+            "description": "Average latest risk score across evaluated transactions [0.0 - 100.0]"
+          },
+          "average_fraud_probability": {
+            "type": "number",
+            "title": "Average Fraud Probability",
+            "description": "Average latest calibrated fraud probability [0.0 - 1.0]"
+          },
+          "high_risk_transactions": {
+            "type": "integer",
+            "title": "High Risk Transactions",
+            "description": "Transactions whose latest prediction is classified HIGH risk"
+          },
+          "medium_risk_transactions": {
+            "type": "integer",
+            "title": "Medium Risk Transactions",
+            "description": "Transactions whose latest prediction is classified MEDIUM risk"
+          },
+          "low_risk_transactions": {
+            "type": "integer",
+            "title": "Low Risk Transactions",
+            "description": "Transactions whose latest prediction is classified LOW risk"
+          }
+        },
+        "type": "object",
+        "required": [
+          "average_risk_score",
+          "average_fraud_probability",
+          "high_risk_transactions",
+          "medium_risk_transactions",
+          "low_risk_transactions"
+        ],
+        "title": "OverviewRiskSummary",
+        "description": "Aggregate risk score and categorical tier distribution."
+      },
+      "OverviewTransactionsSummary": {
+        "properties": {
+          "total_transactions": {
+            "type": "integer",
+            "title": "Total Transactions",
+            "description": "Total distinct transaction records"
+          },
+          "transactions_with_predictions": {
+            "type": "integer",
+            "title": "Transactions With Predictions",
+            "description": "Distinct transactions evaluated with at least one prediction"
+          },
+          "predicted_fraud_count": {
+            "type": "integer",
+            "title": "Predicted Fraud Count",
+            "description": "Distinct transactions whose latest prediction flagged fraud (predicted_class = 1)"
+          },
+          "predicted_legitimate_count": {
+            "type": "integer",
+            "title": "Predicted Legitimate Count",
+            "description": "Distinct transactions whose latest prediction flagged legitimate (predicted_class = 0)"
+          },
+          "predicted_fraud_percentage": {
+            "type": "number",
+            "title": "Predicted Fraud Percentage",
+            "description": "Percentage of evaluated transactions predicted as fraud [0.0 - 100.0]"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_transactions",
+          "transactions_with_predictions",
+          "predicted_fraud_count",
+          "predicted_legitimate_count",
+          "predicted_fraud_percentage"
+        ],
+        "title": "OverviewTransactionsSummary",
+        "description": "Transaction volume and fraud classification metrics."
+      },
+      "PaginatedAuditLogsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of audit log records"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total matching logs count"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Page size"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total available pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "total_pages"
+        ],
+        "title": "PaginatedAuditLogsResponse",
+        "description": "Paginated collection of audit log entries."
+      },
+      "PaginatedCaseNotesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CaseNoteResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of notes in chronological order"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total notes count for this case"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items per page"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total pages available"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "total_pages"
+        ],
+        "title": "PaginatedCaseNotesResponse",
+        "description": "Paginated collection of case notes."
+      },
+      "PaginatedCasesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CaseResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of investigation cases"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total matching cases count"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Page size"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total available pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "total_pages"
+        ],
+        "title": "PaginatedCasesResponse",
+        "description": "Paginated collection of investigation cases."
+      },
+      "PaginatedTransactionsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TransactionSummaryResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Transactions in current page"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total matching transactions"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-indexed)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Page size limit"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total number of pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "total_pages"
+        ],
+        "title": "PaginatedTransactionsResponse",
+        "description": "Paginated collection of transactions."
+      },
+      "PaginatedUsersResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UserResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of user profiles"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total matching user accounts"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page (1-based)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Maximum items per page"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages",
+            "description": "Total available pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "total_pages"
+        ],
+        "title": "PaginatedUsersResponse",
+        "description": "Paginated collection of users for administrative review."
+      },
+      "PredictionHistoryResponse": {
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Target transaction ID"
+          },
+          "total_evaluations": {
+            "type": "integer",
+            "title": "Total Evaluations",
+            "description": "Total predictions recorded"
+          },
+          "predictions": {
+            "items": {
+              "$ref": "#/components/schemas/PredictionRecordResponse"
+            },
+            "type": "array",
+            "title": "Predictions",
+            "description": "Historical predictions ordered newest first"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "total_evaluations",
+          "predictions"
+        ],
+        "title": "PredictionHistoryResponse",
+        "description": "Collection of all prediction evaluations recorded for a specific transaction."
+      },
+      "PredictionRecordResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Unique prediction identifier"
+          },
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Referenced transaction identifier"
+          },
+          "fraud_probability": {
+            "type": "number",
+            "title": "Fraud Probability",
+            "description": "Fraud probability [0.0 - 1.0]"
+          },
+          "risk_score": {
+            "type": "number",
+            "title": "Risk Score",
+            "description": "Normalized risk score [0.0 - 100.0]"
+          },
+          "predicted_class": {
+            "type": "integer",
+            "title": "Predicted Class",
+            "description": "Binary decision (1=Fraud, 0=Legitimate)"
+          },
+          "risk_level": {
+            "$ref": "#/components/schemas/RiskLevel",
+            "description": "Categorical risk tier (LOW, MEDIUM, HIGH)"
+          },
+          "decision_threshold": {
+            "type": "number",
+            "title": "Decision Threshold",
+            "description": "Threshold applied during evaluation"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "description": "Model artifact version"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FeatureAttribution"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation",
+            "description": "Feature attribution attributions if requested"
+          },
+          "predicted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Predicted At",
+            "description": "Timestamp of inference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "transaction_id",
+          "fraud_probability",
+          "risk_score",
+          "predicted_class",
+          "risk_level",
+          "decision_threshold",
+          "model_version",
+          "predicted_at"
+        ],
+        "title": "PredictionRecordResponse",
+        "description": "Persisted prediction record schema."
+      },
+      "PredictionResponse": {
+        "properties": {
+          "fraud_probability": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Fraud Probability",
+            "description": "Predicted probability that transaction is fraudulent [0.0 - 1.0]"
+          },
+          "risk_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Risk Score",
+            "description": "Normalized risk score from 0.0 to 100.0"
+          },
+          "predicted_class": {
+            "type": "integer",
+            "title": "Predicted Class",
+            "description": "Binary decision flag: 1 = Flagged Fraud Risk, 0 = Legitimate"
+          },
+          "risk_level": {
+            "$ref": "#/components/schemas/RiskLevel",
+            "description": "Risk category based on calibrated thresholds (LOW, MEDIUM, HIGH)"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold",
+            "description": "Decision threshold applied for positive fraud classification"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "description": "Model artifact version used for inference"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "Operational notice on ML estimation scope",
+            "default": "Predictions represent estimated probabilistic risk score and do not constitute absolute determination of fraud."
+          }
+        },
+        "type": "object",
+        "required": [
+          "fraud_probability",
+          "risk_score",
+          "predicted_class",
+          "risk_level",
+          "threshold",
+          "model_version"
+        ],
+        "title": "PredictionResponse",
+        "description": "Inference response structure.",
+        "example": {
+          "disclaimer": "Predictions represent estimated probabilistic risk score and do not constitute absolute determination of fraud.",
+          "fraud_probability": 0.8245,
+          "model_version": "fraud-model-v1",
+          "predicted_class": 1,
+          "risk_level": "HIGH",
+          "risk_score": 82.45,
+          "threshold": 0.56
+        }
+      },
+      "PredictionWithExplanationResponse": {
+        "properties": {
+          "fraud_probability": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Fraud Probability",
+            "description": "Predicted probability that transaction is fraudulent [0.0 - 1.0]"
+          },
+          "risk_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Risk Score",
+            "description": "Normalized risk score from 0.0 to 100.0"
+          },
+          "predicted_class": {
+            "type": "integer",
+            "title": "Predicted Class",
+            "description": "Binary decision flag: 1 = Flagged Fraud Risk, 0 = Legitimate"
+          },
+          "risk_level": {
+            "$ref": "#/components/schemas/RiskLevel",
+            "description": "Risk category based on calibrated thresholds (LOW, MEDIUM, HIGH)"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold",
+            "description": "Decision threshold applied for positive fraud classification"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version",
+            "description": "Model artifact version used for inference"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer",
+            "description": "Operational notice on ML estimation scope",
+            "default": "Predictions represent estimated probabilistic risk score and do not constitute absolute determination of fraud."
+          },
+          "top_risk_factors": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FeatureAttribution"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Risk Factors",
+            "description": "Top features increasing or decreasing the fraud probability (via SHAP)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fraud_probability",
+          "risk_score",
+          "predicted_class",
+          "risk_level",
+          "threshold",
+          "model_version"
+        ],
+        "title": "PredictionWithExplanationResponse",
+        "description": "Inference response enriched with top contributing feature explanations.",
+        "example": {
+          "disclaimer": "Predictions represent estimated probabilistic risk score and do not constitute absolute determination of fraud.",
+          "fraud_probability": 0.8245,
+          "model_version": "fraud-model-v1",
+          "predicted_class": 1,
+          "risk_level": "HIGH",
+          "risk_score": 82.45,
+          "threshold": 0.56
+        }
+      },
+      "RiskDistributionItem": {
+        "properties": {
+          "risk_level": {
+            "type": "string",
+            "title": "Risk Level",
+            "description": "Risk category: LOW, MEDIUM, or HIGH"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Number of distinct transactions at this risk tier"
+          },
+          "percentage": {
+            "type": "number",
+            "title": "Percentage",
+            "description": "Percentage of evaluated transactions belonging to this tier [0.0 - 100.0]"
+          }
+        },
+        "type": "object",
+        "required": [
+          "risk_level",
+          "count",
+          "percentage"
+        ],
+        "title": "RiskDistributionItem",
+        "description": "Categorical risk tier breakdown item."
+      },
+      "RiskDistributionResponse": {
+        "properties": {
+          "total_transactions": {
+            "type": "integer",
+            "title": "Total Transactions",
+            "description": "Total distinct transactions with predictions"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RiskDistributionItem"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "Risk tier counts and percentages"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/ClassificationDistributionSummary",
+            "description": "Model classification binary breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_transactions",
+          "items",
+          "classification"
+        ],
+        "title": "RiskDistributionResponse",
+        "description": "Current risk distribution breakdown across all evaluated transactions."
+      },
+      "RiskLevel": {
+        "type": "string",
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH"
+        ],
+        "title": "RiskLevel",
+        "description": "Transaction risk categorization."
+      },
+      "ScoreTransactionRequest": {
+        "properties": {
+          "Time": {
+            "type": "number",
+            "title": "Time",
+            "description": "Seconds elapsed since the first transaction in dataset"
+          },
+          "V1": {
+            "type": "number",
+            "title": "V1",
+            "description": "PCA feature V1"
+          },
+          "V2": {
+            "type": "number",
+            "title": "V2",
+            "description": "PCA feature V2"
+          },
+          "V3": {
+            "type": "number",
+            "title": "V3",
+            "description": "PCA feature V3"
+          },
+          "V4": {
+            "type": "number",
+            "title": "V4",
+            "description": "PCA feature V4"
+          },
+          "V5": {
+            "type": "number",
+            "title": "V5",
+            "description": "PCA feature V5"
+          },
+          "V6": {
+            "type": "number",
+            "title": "V6",
+            "description": "PCA feature V6"
+          },
+          "V7": {
+            "type": "number",
+            "title": "V7",
+            "description": "PCA feature V7"
+          },
+          "V8": {
+            "type": "number",
+            "title": "V8",
+            "description": "PCA feature V8"
+          },
+          "V9": {
+            "type": "number",
+            "title": "V9",
+            "description": "PCA feature V9"
+          },
+          "V10": {
+            "type": "number",
+            "title": "V10",
+            "description": "PCA feature V10"
+          },
+          "V11": {
+            "type": "number",
+            "title": "V11",
+            "description": "PCA feature V11"
+          },
+          "V12": {
+            "type": "number",
+            "title": "V12",
+            "description": "PCA feature V12"
+          },
+          "V13": {
+            "type": "number",
+            "title": "V13",
+            "description": "PCA feature V13"
+          },
+          "V14": {
+            "type": "number",
+            "title": "V14",
+            "description": "PCA feature V14"
+          },
+          "V15": {
+            "type": "number",
+            "title": "V15",
+            "description": "PCA feature V15"
+          },
+          "V16": {
+            "type": "number",
+            "title": "V16",
+            "description": "PCA feature V16"
+          },
+          "V17": {
+            "type": "number",
+            "title": "V17",
+            "description": "PCA feature V17"
+          },
+          "V18": {
+            "type": "number",
+            "title": "V18",
+            "description": "PCA feature V18"
+          },
+          "V19": {
+            "type": "number",
+            "title": "V19",
+            "description": "PCA feature V19"
+          },
+          "V20": {
+            "type": "number",
+            "title": "V20",
+            "description": "PCA feature V20"
+          },
+          "V21": {
+            "type": "number",
+            "title": "V21",
+            "description": "PCA feature V21"
+          },
+          "V22": {
+            "type": "number",
+            "title": "V22",
+            "description": "PCA feature V22"
+          },
+          "V23": {
+            "type": "number",
+            "title": "V23",
+            "description": "PCA feature V23"
+          },
+          "V24": {
+            "type": "number",
+            "title": "V24",
+            "description": "PCA feature V24"
+          },
+          "V25": {
+            "type": "number",
+            "title": "V25",
+            "description": "PCA feature V25"
+          },
+          "V26": {
+            "type": "number",
+            "title": "V26",
+            "description": "PCA feature V26"
+          },
+          "V27": {
+            "type": "number",
+            "title": "V27",
+            "description": "PCA feature V27"
+          },
+          "V28": {
+            "type": "number",
+            "title": "V28",
+            "description": "PCA feature V28"
+          },
+          "Amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Amount",
+            "description": "Transaction amount in currency units"
+          },
+          "external_reference": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Reference",
+            "description": "Optional unique client reference or idempotency key"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By",
+            "description": "Optional submitting entity or user, reserved for authentication phase"
+          },
+          "explain": {
+            "type": "boolean",
+            "title": "Explain",
+            "description": "Whether to generate and persist SHAP feature attribution explanations",
+            "default": false
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold",
+            "description": "Optional inference decision threshold override"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "Time",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6",
+          "V7",
+          "V8",
+          "V9",
+          "V10",
+          "V11",
+          "V12",
+          "V13",
+          "V14",
+          "V15",
+          "V16",
+          "V17",
+          "V18",
+          "V19",
+          "V20",
+          "V21",
+          "V22",
+          "V23",
+          "V24",
+          "V25",
+          "V26",
+          "V27",
+          "V28",
+          "Amount"
+        ],
+        "title": "ScoreTransactionRequest",
+        "description": "Payload for scoring and persisting a new transaction.",
+        "example": {
+          "Amount": 149.99,
+          "Time": 406.0,
+          "V1": -2.312,
+          "V10": -2.772,
+          "V11": 3.202,
+          "V12": -2.899,
+          "V13": -0.595,
+          "V14": -4.289,
+          "V15": 0.389,
+          "V16": -1.14,
+          "V17": -2.83,
+          "V18": -0.016,
+          "V19": 0.416,
+          "V2": 1.951,
+          "V20": 0.126,
+          "V21": 0.517,
+          "V22": -0.035,
+          "V23": -0.465,
+          "V24": 0.32,
+          "V25": 0.044,
+          "V26": 0.177,
+          "V27": 0.261,
+          "V28": -0.143,
+          "V3": -1.609,
+          "V4": 3.997,
+          "V5": -0.522,
+          "V6": -1.426,
+          "V7": -2.537,
+          "V8": 1.391,
+          "V9": -2.77,
+          "explain": true,
+          "external_reference": "TXN-984321"
+        }
+      },
+      "ScoreTransactionResponse": {
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "title": "Transaction Id",
+            "description": "Persisted transaction identifier"
+          },
+          "external_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Reference",
+            "description": "External reference if supplied"
+          },
+          "transaction_time": {
+            "type": "number",
+            "title": "Transaction Time",
+            "description": "Transaction dataset time"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Transaction amount"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By",
+            "description": "Submitting user/service account"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Transaction creation timestamp"
+          },
+          "prediction": {
+            "$ref": "#/components/schemas/PredictionRecordResponse",
+            "description": "Persisted prediction result"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "transaction_time",
+          "amount",
+          "created_at",
+          "prediction"
+        ],
+        "title": "ScoreTransactionResponse",
+        "description": "Response returned upon successfully scoring and persisting a transaction."
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token",
+            "description": "Signed JWT bearer access token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "description": "Token scheme identifier",
+            "default": "bearer"
+          },
+          "expires_in_minutes": {
+            "type": "integer",
+            "title": "Expires In Minutes",
+            "description": "Access token lifespan in minutes"
+          },
+          "user_id": {
+            "type": "integer",
+            "title": "User Id",
+            "description": "Unique user identifier"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "Assigned authorization role"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Full display name of user"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "User email address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "expires_in_minutes",
+          "user_id",
+          "role",
+          "name",
+          "email"
+        ],
+        "title": "TokenResponse",
+        "description": "Authentication response returning signed JWT access token and user metadata."
+      },
+      "TransactionDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Transaction ID"
+          },
+          "external_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Reference",
+            "description": "External reference key"
+          },
+          "transaction_time": {
+            "type": "number",
+            "title": "Transaction Time",
+            "description": "Transaction dataset time"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Transaction amount"
+          },
+          "features": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Features",
+            "description": "Validated feature vector (V1 through V28)"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By",
+            "description": "Submitting entity"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "latest_prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictionRecordResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Most recent prediction result"
+          },
+          "predictions_count": {
+            "type": "integer",
+            "title": "Predictions Count",
+            "description": "Total number of prediction evaluations recorded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "transaction_time",
+          "amount",
+          "features",
+          "created_at",
+          "predictions_count"
+        ],
+        "title": "TransactionDetailResponse",
+        "description": "Detailed transaction response including anonymized PCA features and prediction summary."
+      },
+      "TransactionInput": {
+        "properties": {
+          "Time": {
+            "type": "number",
+            "title": "Time",
+            "description": "Seconds elapsed since the first transaction in dataset"
+          },
+          "V1": {
+            "type": "number",
+            "title": "V1",
+            "description": "PCA transformed feature 1"
+          },
+          "V2": {
+            "type": "number",
+            "title": "V2",
+            "description": "PCA transformed feature 2"
+          },
+          "V3": {
+            "type": "number",
+            "title": "V3",
+            "description": "PCA transformed feature 3"
+          },
+          "V4": {
+            "type": "number",
+            "title": "V4",
+            "description": "PCA transformed feature 4"
+          },
+          "V5": {
+            "type": "number",
+            "title": "V5",
+            "description": "PCA transformed feature 5"
+          },
+          "V6": {
+            "type": "number",
+            "title": "V6",
+            "description": "PCA transformed feature 6"
+          },
+          "V7": {
+            "type": "number",
+            "title": "V7",
+            "description": "PCA transformed feature 7"
+          },
+          "V8": {
+            "type": "number",
+            "title": "V8",
+            "description": "PCA transformed feature 8"
+          },
+          "V9": {
+            "type": "number",
+            "title": "V9",
+            "description": "PCA transformed feature 9"
+          },
+          "V10": {
+            "type": "number",
+            "title": "V10",
+            "description": "PCA transformed feature 10"
+          },
+          "V11": {
+            "type": "number",
+            "title": "V11",
+            "description": "PCA transformed feature 11"
+          },
+          "V12": {
+            "type": "number",
+            "title": "V12",
+            "description": "PCA transformed feature 12"
+          },
+          "V13": {
+            "type": "number",
+            "title": "V13",
+            "description": "PCA transformed feature 13"
+          },
+          "V14": {
+            "type": "number",
+            "title": "V14",
+            "description": "PCA transformed feature 14"
+          },
+          "V15": {
+            "type": "number",
+            "title": "V15",
+            "description": "PCA transformed feature 15"
+          },
+          "V16": {
+            "type": "number",
+            "title": "V16",
+            "description": "PCA transformed feature 16"
+          },
+          "V17": {
+            "type": "number",
+            "title": "V17",
+            "description": "PCA transformed feature 17"
+          },
+          "V18": {
+            "type": "number",
+            "title": "V18",
+            "description": "PCA transformed feature 18"
+          },
+          "V19": {
+            "type": "number",
+            "title": "V19",
+            "description": "PCA transformed feature 19"
+          },
+          "V20": {
+            "type": "number",
+            "title": "V20",
+            "description": "PCA transformed feature 20"
+          },
+          "V21": {
+            "type": "number",
+            "title": "V21",
+            "description": "PCA transformed feature 21"
+          },
+          "V22": {
+            "type": "number",
+            "title": "V22",
+            "description": "PCA transformed feature 22"
+          },
+          "V23": {
+            "type": "number",
+            "title": "V23",
+            "description": "PCA transformed feature 23"
+          },
+          "V24": {
+            "type": "number",
+            "title": "V24",
+            "description": "PCA transformed feature 24"
+          },
+          "V25": {
+            "type": "number",
+            "title": "V25",
+            "description": "PCA transformed feature 25"
+          },
+          "V26": {
+            "type": "number",
+            "title": "V26",
+            "description": "PCA transformed feature 26"
+          },
+          "V27": {
+            "type": "number",
+            "title": "V27",
+            "description": "PCA transformed feature 27"
+          },
+          "V28": {
+            "type": "number",
+            "title": "V28",
+            "description": "PCA transformed feature 28"
+          },
+          "Amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Amount",
+            "description": "Transaction amount in currency units"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "Time",
+          "V1",
+          "V2",
+          "V3",
+          "V4",
+          "V5",
+          "V6",
+          "V7",
+          "V8",
+          "V9",
+          "V10",
+          "V11",
+          "V12",
+          "V13",
+          "V14",
+          "V15",
+          "V16",
+          "V17",
+          "V18",
+          "V19",
+          "V20",
+          "V21",
+          "V22",
+          "V23",
+          "V24",
+          "V25",
+          "V26",
+          "V27",
+          "V28",
+          "Amount"
+        ],
+        "title": "TransactionInput",
+        "description": "Single credit card transaction feature vector.\n\nStrictly forbids unexpected fields (such as 'Class') and validates that\nall values are finite numbers (rejecting NaN, inf, and -inf).",
+        "example": {
+          "Amount": 0.0,
+          "Time": 406.0,
+          "V1": -2.312226542,
+          "V10": -2.772272145,
+          "V11": 3.202033207,
+          "V12": -2.899907388,
+          "V13": -0.595221881,
+          "V14": -4.289253782,
+          "V15": 0.38972412,
+          "V16": -1.14074718,
+          "V17": -2.830055675,
+          "V18": -0.016822468,
+          "V19": 0.416955705,
+          "V2": 1.951992011,
+          "V20": 0.126910559,
+          "V21": 0.517232371,
+          "V22": -0.035049369,
+          "V23": -0.465211076,
+          "V24": 0.320198198,
+          "V25": 0.044519167,
+          "V26": 0.177839798,
+          "V27": 0.261145003,
+          "V28": -0.143275875,
+          "V3": -1.609850732,
+          "V4": 3.997905588,
+          "V5": -0.522187865,
+          "V6": -1.426545319,
+          "V7": -2.537387306,
+          "V8": 1.391657248,
+          "V9": -2.770089277
+        }
+      },
+      "TransactionSummaryResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Transaction ID"
+          },
+          "external_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Reference",
+            "description": "External reference key"
+          },
+          "transaction_time": {
+            "type": "number",
+            "title": "Transaction Time",
+            "description": "Transaction dataset time"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount",
+            "description": "Transaction amount"
+          },
+          "submitted_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted By",
+            "description": "Submitting entity"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "latest_prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictionRecordResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Most recent prediction result"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "transaction_time",
+          "amount",
+          "created_at"
+        ],
+        "title": "TransactionSummaryResponse",
+        "description": "Summary of a transaction with its latest prediction for list views."
+      },
+      "TrendBucketItem": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "Bucket start timestamp (UTC)"
+          },
+          "prediction_count": {
+            "type": "integer",
+            "title": "Prediction Count",
+            "description": "Total prediction events in bucket"
+          },
+          "distinct_transactions": {
+            "type": "integer",
+            "title": "Distinct Transactions",
+            "description": "Distinct transactions evaluated in bucket"
+          },
+          "predicted_fraud_count": {
+            "type": "integer",
+            "title": "Predicted Fraud Count",
+            "description": "Predictions classified as fraud in bucket"
+          },
+          "predicted_legitimate_count": {
+            "type": "integer",
+            "title": "Predicted Legitimate Count",
+            "description": "Predictions classified as legitimate in bucket"
+          },
+          "high_risk_count": {
+            "type": "integer",
+            "title": "High Risk Count",
+            "description": "Predictions classified as HIGH risk in bucket"
+          },
+          "average_risk_score": {
+            "type": "number",
+            "title": "Average Risk Score",
+            "description": "Average risk score in bucket [0.0 - 100.0]"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp",
+          "prediction_count",
+          "distinct_transactions",
+          "predicted_fraud_count",
+          "predicted_legitimate_count",
+          "high_risk_count",
+          "average_risk_score"
+        ],
+        "title": "TrendBucketItem",
+        "description": "Time-series metrics aggregated for a specific time bucket."
+      },
+      "UserCreateRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "description": "User full display name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email",
+            "description": "Unique email address"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password",
+            "description": "Initial account password"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ANALYST",
+              "ADMIN",
+              "AUDITOR"
+            ],
+            "title": "Role",
+            "description": "Assigned role: ANALYST, ADMIN, or AUDITOR",
+            "default": "ANALYST"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "UserCreateRequest",
+        "description": "Payload for creating a new user by an Administrator.",
+        "example": {
+          "email": "jane@fraudshield.ai",
+          "name": "Jane Analyst",
+          "password": "StrongPassword123!",
+          "role": "ANALYST"
+        }
+      },
+      "UserResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Unique user identifier"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "User full display name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Normalized user email address"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "description": "System RBAC role: ANALYST, ADMIN, or AUDITOR"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether user account is active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Registration timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last modification timestamp"
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login At",
+            "description": "Last successful authentication timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UserResponse",
+        "description": "Public user profile schema (never exposes password hashes or signing secrets)."
+      },
+      "UserUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Updated display name"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ANALYST",
+                  "ADMIN",
+                  "AUDITOR"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role",
+            "description": "Updated role"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Activate or deactivate account"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password",
+            "description": "Optional password reset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UserUpdateRequest",
+        "description": "Payload for updating an existing user's profile, role, or active status."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "/api/v1/auth/login"
+          }
+        }
+      }
+    }
+  }
+}

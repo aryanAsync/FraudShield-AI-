@@ -1,0 +1,339 @@
+.overview-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.page-title {
+  margin-bottom: 2px;
+}
+
+.range-filter-group {
+  display: inline-flex;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.range-pill-btn {
+  padding: var(--space-1) var(--space-3);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+.range-pill-btn:hover {
+  color: var(--text-primary);
+}
+
+.range-pill-btn.active {
+  background-color: var(--accent-100);
+  color: var(--accent-600);
+  font-weight: 600;
+}
+
+/* Tier 1: Summary Strip */
+.summary-strip-panel {
+  padding: var(--space-6);
+  background-color: var(--bg-surface);
+}
+
+.summary-strip-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+
+.primary-metric-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.primary-metric-block .metric-val {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text-primary);
+  margin: 4px 0 2px;
+}
+
+.secondary-metric-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+}
+
+.secondary-metric-block .metric-val {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 4px 0 2px;
+}
+
+.metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.metric-sub {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.metric-divider {
+  width: 1px;
+  height: 54px;
+  background-color: var(--border-default);
+}
+
+.text-danger {
+  color: var(--color-danger);
+}
+
+.text-high-risk {
+  color: var(--risk-high-text);
+}
+
+.text-accent {
+  color: var(--accent-600);
+}
+
+/* Dashboard Grids */
+.dashboard-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.widget-card {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.widget-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.widget-action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--accent-600);
+  font-weight: 500;
+}
+
+.table-twin-toggle-btn {
+  color: var(--accent-600);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.table-twin-toggle-btn:hover {
+  background-color: var(--bg-subtle);
+  text-decoration: underline;
+}
+
+.widget-body {
+  flex: 1;
+}
+
+.chart-wrapper {
+  margin-top: var(--space-2);
+}
+
+.mini-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.mini-data-table th {
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-default);
+  font-weight: 600;
+  text-align: left;
+}
+
+.mini-data-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.table-twin-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+/* Risk Bar rows */
+.risk-bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.risk-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.risk-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.risk-bar-track {
+  height: 8px;
+  background-color: var(--bg-inset);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.risk-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-xs);
+  transition: width 180ms ease-out;
+}
+
+.classification-box {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.classification-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Case Status */
+.case-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.case-status-card {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.case-status-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.case-status-card-count {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.workload-summary {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+/* Feature Importance Preview */
+.feature-imp-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.feature-imp-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 60px;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 13px;
+}
+
+.feature-name-label {
+  font-weight: 600;
+}
+
+.feature-imp-bar-track {
+  height: 8px;
+  background-color: var(--bg-inset);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.feature-imp-bar-fill {
+  height: 100%;
+  background-color: var(--accent-600);
+  border-radius: var(--radius-xs);
+}
+
+.feature-imp-val {
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.feature-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-3);
+  color: var(--text-tertiary);
+}
+
+.disclaimer-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid-2col {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-divider {
+    display: none;
+  }
+}

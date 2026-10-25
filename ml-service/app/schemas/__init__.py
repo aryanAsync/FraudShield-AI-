@@ -23,6 +23,9 @@ from app.schemas.case_note import (
     PaginatedCaseNotesResponse,
 )
 from app.schemas.persistence import (
+    BatchScoreTransactionItem,
+    BatchScoreTransactionRequest,
+    BatchScoreTransactionResponse,
     PaginatedTransactionsResponse,
     PredictionHistoryResponse,
     PredictionRecordResponse,

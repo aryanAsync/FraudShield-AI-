@@ -256,4 +256,4 @@ npm run build   # Production TypeScript & Vite build
 
 - **Decision-Support Only:** FraudShield AI is designed as an operational decision-support tool for fraud risk analysts. Predictions represent model estimates, not definitive legal or financial determinations of guilt.
 - **Anonymized Features:** Features `V1` through `V28` are Principal Components from PCA transformation. They are not assigned artificial real-world semantics (e.g., merchant location or device fingerprints).
-- **Explainability:** SHAP feature attributions reflect local additive mathematical contributions pushing the model probability toward (+) or away (-) from the decision threshold, and do not constitute independent proof of fraudulent activity.
+- **Explainability:** SHAP feature attributions reflect local additive mathematical contributions pushing the model probability toward (+) or away (-) from the decision threshold, and do not constitute independent proof of the fraudulent activity.

@@ -14,10 +14,16 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -38,6 +44,56 @@ logging.basicConfig(
 logger = logging.getLogger("compare_models")
 
 
+class KMeansAnomalyClassifier(BaseEstimator, ClassifierMixin):
+    """K-Means clustering anomaly and fraud detector.
+    Computes cluster fraud propensity and centroid distance to produce calibrated fraud probabilities.
+    """
+
+    def __init__(self, n_clusters: int = 8, random_state: int = 42):
+        self.n_clusters = n_clusters
+        self.random_state = random_state
+        self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=self.random_state, n_init=10)
+        self.cluster_fraud_prob_: np.ndarray | None = None
+        self.classes_ = np.array([0, 1])
+        self.max_dist_ = 1.0
+
+    def fit(self, X, y=None):
+        X_arr = np.asarray(X)
+        self.kmeans.fit(X_arr)
+        if y is not None:
+            labels = self.kmeans.labels_
+            y_arr = np.asarray(y)
+            self.cluster_fraud_prob_ = np.zeros(self.n_clusters)
+            for c in range(self.n_clusters):
+                mask = labels == c
+                if np.sum(mask) > 0:
+                    self.cluster_fraud_prob_[c] = np.mean(y_arr[mask])
+                else:
+                    self.cluster_fraud_prob_[c] = 0.0
+        distances = np.min(self.kmeans.transform(X_arr), axis=1)
+        self.max_dist_ = float(np.percentile(distances, 98) + 1e-6)
+        return self
+
+    def predict_proba(self, X):
+        X_arr = np.asarray(X)
+        cluster_idx = self.kmeans.predict(X_arr)
+        distances = np.min(self.kmeans.transform(X_arr), axis=1)
+        norm_dist = np.clip(distances / self.max_dist_, 0.0, 1.0)
+
+        if self.cluster_fraud_prob_ is not None:
+            base_p1 = self.cluster_fraud_prob_[cluster_idx]
+            p1 = np.clip(0.65 * base_p1 + 0.35 * (norm_dist * 0.15), 0.0, 1.0)
+        else:
+            p1 = norm_dist
+
+        p0 = 1.0 - p1
+        return np.column_stack([p0, p1])
+
+    def predict(self, X):
+        proba = self.predict_proba(X)
+        return (proba[:, 1] >= 0.5).astype(int)
+
+
 def build_candidate_models(train_df: pd.DataFrame) -> dict[str, Any]:
     """Define candidate classification models with appropriate imbalanced-class configurations."""
     n_legit = int((train_df[TARGET_COLUMN] == 0).sum())
@@ -52,12 +108,6 @@ def build_candidate_models(train_df: pd.DataFrame) -> dict[str, Any]:
     )
 
     models = {
-        "LogisticRegression": LogisticRegression(
-            class_weight="balanced",
-            max_iter=1000,
-            random_state=42,
-            solver="lbfgs",
-        ),
         "RandomForest": RandomForestClassifier(
             n_estimators=100,
             max_depth=10,
@@ -74,6 +124,27 @@ def build_candidate_models(train_df: pd.DataFrame) -> dict[str, Any]:
             random_state=42,
             n_jobs=-1,
         ),
+        "DecisionTree": DecisionTreeClassifier(
+            max_depth=8,
+            class_weight="balanced",
+            random_state=42,
+        ),
+        "KNN": KNeighborsClassifier(
+            n_neighbors=5,
+            weights="distance",
+            n_jobs=-1,
+        ),
+        "LogisticRegression": LogisticRegression(
+            class_weight="balanced",
+            max_iter=1000,
+            random_state=42,
+            solver="lbfgs",
+        ),
+        "Clustering": KMeansAnomalyClassifier(
+            n_clusters=8,
+            random_state=42,
+        ),
+        "NaiveBayes": GaussianNB(),
     }
     return models
 

@@ -502,6 +502,7 @@ export interface EvaluatedModelItem {
 export interface ModelEvaluationResponse {
   deployed_model: EvaluatedModelItem;
   baseline_model: EvaluatedModelItem;
+  candidate_models?: EvaluatedModelItem[];
   evaluation_timestamp: string;
   comparison_summary: string;
 }

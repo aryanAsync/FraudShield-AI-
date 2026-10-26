@@ -50,5 +50,9 @@ class ModelEvaluationResponse(BaseModel):
 
     deployed_model: EvaluatedModelItem = Field(..., description="Currently active production model")
     baseline_model: EvaluatedModelItem = Field(..., description="Benchmark non-deployed baseline model")
+    candidate_models: list[EvaluatedModelItem] = Field(
+        default_factory=list,
+        description="Comprehensive list of evaluated candidate models (RF, XGBoost, DecisionTree, KNN, LR, Clustering, NaiveBayes)",
+    )
     evaluation_timestamp: str = Field(..., description="Timestamp of model comparison benchmark run")
     comparison_summary: str = Field(..., description="High-level reasoning for production model selection")

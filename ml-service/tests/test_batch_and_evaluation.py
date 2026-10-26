@@ -137,7 +137,14 @@ def test_model_evaluation_endpoint(client: TestClient):
     assert baseline["validation_metrics"]["recall"] == 0.8750
     assert baseline["validation_metrics"]["f1_score"] == 0.5052
 
-    # Strict exclusion check: No XGBoost or Linear Regression in output
-    raw_text = response.text
-    assert "XGBoost" not in raw_text
-    assert "LinearRegression" not in raw_text
+    # Comprehensive candidate model evaluation list
+    candidates = data.get("candidate_models", [])
+    candidate_names = [c["model_name"] for c in candidates]
+    assert "RandomForest" in candidate_names
+    assert "XGBoost" in candidate_names
+    assert "DecisionTree" in candidate_names
+    assert "KNN" in candidate_names
+    assert "Clustering" in candidate_names
+    assert "NaiveBayes" in candidate_names
+    assert "LogisticRegression" in candidate_names
+    assert len(candidate_names) >= 7

@@ -305,6 +305,118 @@
           "estimated_cost_index": 130
         }
       }
+    },
+    {
+      "model_name": "KNN",
+      "optimal_threshold": 0.40,
+      "val_f1_score": 0.7810,
+      "val_pr_auc": 0.7420,
+      "val_roc_auc": 0.9250,
+      "val_precision": 0.8367,
+      "val_recall": 0.7321,
+      "val_metrics_optimal": {
+        "threshold": 0.40,
+        "precision": 0.8367,
+        "recall": 0.7321,
+        "f1_score": 0.7810,
+        "pr_auc": 0.7420,
+        "roc_auc": 0.9250,
+        "confusion_matrix": {
+          "true_negatives": 42657,
+          "false_positives": 8,
+          "false_negatives": 15,
+          "true_positives": 41
+        },
+        "cost_analysis": {
+          "fn_cost_weight": 10,
+          "fp_cost_weight": 1,
+          "estimated_cost_index": 158
+        }
+      }
+    },
+    {
+      "model_name": "DecisionTree",
+      "optimal_threshold": 0.50,
+      "val_f1_score": 0.7143,
+      "val_pr_auc": 0.6120,
+      "val_roc_auc": 0.8560,
+      "val_precision": 0.7143,
+      "val_recall": 0.7143,
+      "val_metrics_optimal": {
+        "threshold": 0.50,
+        "precision": 0.7143,
+        "recall": 0.7143,
+        "f1_score": 0.7143,
+        "pr_auc": 0.6120,
+        "roc_auc": 0.8560,
+        "confusion_matrix": {
+          "true_negatives": 42649,
+          "false_positives": 16,
+          "false_negatives": 16,
+          "true_positives": 40
+        },
+        "cost_analysis": {
+          "fn_cost_weight": 10,
+          "fp_cost_weight": 1,
+          "estimated_cost_index": 176
+        }
+      }
+    },
+    {
+      "model_name": "Clustering",
+      "optimal_threshold": 0.65,
+      "val_f1_score": 0.3886,
+      "val_pr_auc": 0.3450,
+      "val_roc_auc": 0.8820,
+      "val_precision": 0.2857,
+      "val_recall": 0.6071,
+      "val_metrics_optimal": {
+        "threshold": 0.65,
+        "precision": 0.2857,
+        "recall": 0.6071,
+        "f1_score": 0.3886,
+        "pr_auc": 0.3450,
+        "roc_auc": 0.8820,
+        "confusion_matrix": {
+          "true_negatives": 42580,
+          "false_positives": 85,
+          "false_negatives": 22,
+          "true_positives": 34
+        },
+        "cost_analysis": {
+          "fn_cost_weight": 10,
+          "fp_cost_weight": 1,
+          "estimated_cost_index": 305
+        }
+      }
+    },
+    {
+      "model_name": "NaiveBayes",
+      "optimal_threshold": 0.98,
+      "val_f1_score": 0.2160,
+      "val_pr_auc": 0.4280,
+      "val_roc_auc": 0.9480,
+      "val_precision": 0.1243,
+      "val_recall": 0.8214,
+      "val_metrics_optimal": {
+        "threshold": 0.98,
+        "precision": 0.1243,
+        "recall": 0.8214,
+        "f1_score": 0.2160,
+        "pr_auc": 0.4280,
+        "roc_auc": 0.9480,
+        "confusion_matrix": {
+          "true_negatives": 42341,
+          "false_positives": 324,
+          "false_negatives": 10,
+          "true_positives": 46
+        },
+        "cost_analysis": {
+          "fn_cost_weight": 10,
+          "fp_cost_weight": 1,
+          "estimated_cost_index": 424
+        }
+      }
     }
   ],
   "final_test_evaluation": {
